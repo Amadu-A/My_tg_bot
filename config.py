@@ -3,9 +3,9 @@ from environs import Env
 
 env = Env()
 env.read_env()
-bot_token = env.str('bot_token')
-admin_id = env.list('admin_id')
-ip = env.str('ip')
+BOT_TOKEN = env.str('BOT_TOKEN')
+ADMIN_ID = env.list('ADMIN_ID')
+IP = env.str('IP')
 
 
 

@@ -6,24 +6,12 @@ from telebot import types
 # import json
 #
 #
-from config import bot_token
+from config import BOT_TOKEN
 import handlers
 
 
 bot = telebot.TeleBot(bot_token)
-#MyURL = 'https://rapidapi.com/hub'
-#URL = 'https://rapidapi.com/apidojo/api/hotels4/' - какой url надо парсить?
 
-# def set_defaultCommands():
-#     bot.set_my_commands(
-#         [
-#             types.BotCommand('hello-world', 'help'),
-#             types.BotCommand('lowprice', 'highprice'),
-#             types.BotCommand('bestdeal', 'history')
-#         ]
-#     )
-#
-#
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):
     if message.text == "Привет":

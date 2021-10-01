@@ -6,11 +6,19 @@ from telebot import types
 # import json
 #
 #
-from config import BOT_TOKEN
+from config import BOT_TOKEN, API_KEY
 import handlers
 
 
-bot = telebot.TeleBot(bot_token)
+bot = telebot.TeleBot(BOT_TOKEN)
+headers = {
+        'x-rapidapi-host': 'hotels4.p.rapidapi.com',
+        'x-rapidapi-key': API_KEY
+    }
+my_url = 'https://hotels4.p.rapidapi.com/locations/search'
+
+
+
 
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):

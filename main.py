@@ -1,3 +1,5 @@
+import random
+
 import telebot
 from telebot import types
 # import logging
@@ -7,7 +9,7 @@ from telebot import types
 #
 #
 from config import BOT_TOKEN, API_KEY
-import handlers
+import botrequests
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -17,8 +19,10 @@ headers = {
     }
 my_url = 'https://hotels4.p.rapidapi.com/locations/search'
 
-
-
+help_msg = '/lowprice - самые дешёвые отели\n' \
+           '/highprice - самые дорогие отели в городе\n' \
+           '/bestdeal - отели, подходящие по цене и удаленности от центра\n' \
+           '/history - история поиска'
 
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):

@@ -12,7 +12,7 @@ from telebot import types
 #
 from config import BOT_TOKEN, API_KEY
 #import botrequests
-from botrequests.lowprice import get_city, search_hotels
+# from botrequests.lowprice import get_city, search_hotels
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -36,9 +36,13 @@ def welcome(message):
     bot.send_message(message.chat.id, 'Введите город')
     # тут будет скрипт с библиотекой re, который будет искать похожие названия городов, если
     # не обнаружится совпадений
+    city = message.text
+    city = city.title()
+    print(message.text)
     bot.register_next_step_handler(message, get_city)
     bot.send_message(message.chat.id, 'Идет поиск отелей')
-    bot.register_next_step_handler(message, search_hotels)
+
+    #bot.register_next_step_handler(message, search_hotels)
 
 
     # location_dict = requests.get(my_url, headers=headers, params=params)
@@ -65,11 +69,20 @@ def welcome(message):
 def welcome(message):
     bot.send_message(message.chat.id, 'Команда history в стадии разработки')
 
-
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):
     bot.send_message(message.from_user.id, text=help_msg)
 
+def get_city(message):
+    city = message.text
+    print(city)
+    city = city.title()
+    bot.send_message(message.chat.id, 'Введите количество отелей')
+    bot.register_next_step_handler(message, get_count_hotels)
+    print(city)
+    #return city
 
+def get_count_hotels(message):
+    pass
 
 bot.polling(none_stop=True, interval=0)

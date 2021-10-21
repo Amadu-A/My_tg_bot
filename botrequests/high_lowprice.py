@@ -1,17 +1,12 @@
 import requests
 import json
 
-from main import headers, date_today, date_tomorrow
+from config import headers, date_today, date_tomorrow, url_id_city, url_detail
 from classUser import *
 
 
-url_id_city = 'https://hotels4.p.rapidapi.com/locations/search'
-url_detail = 'https://hotels4.p.rapidapi.com/properties/list'
-url_lang = 'https://hotels4.p.rapidapi.com/get-meta-data'
-
-
 def get_hotels(query_param: dict):
-    querystring_search = {'query': query_param['city'], 'locale': 're_RU'}
+    querystring_search = {'query': query_param['city'], 'locale': query_param['locale']}
     response = json.loads(requests.request('GET', url_id_city, headers=headers, params=querystring_search).text)
     print(response)
     city_id = response.get('suggestions')[0].get('entities')[0].get('destinationId')
@@ -23,7 +18,7 @@ def get_hotels(query_param: dict):
         'checkOut': '{}'.format(date_tomorrow),
         'checkIn': '{}'.format(date_today),
         'sortOrder': query_param['sorting'],
-        'locale': 'ru_RU',
+        'locale': query_param['locale'],
         'currency': 'RUB'
     }
     print(querystring_detail)

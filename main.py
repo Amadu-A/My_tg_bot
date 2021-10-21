@@ -1,5 +1,5 @@
 import sqlite3
-import datetime
+
 import telebot
 from telebot import types
 # import logging
@@ -7,41 +7,39 @@ from telebot import types
 # import json
 #
 #
-from config import BOT_TOKEN, API_KEY
+from config import BOT_TOKEN
 # import botrequests
-from botrequests.lowprice import *
-#from botrequests.lowprice import get_hotels
+from botrequests.high_lowprice import *
+from botrequests.settings import get_list_locale
 
 
 bot = telebot.TeleBot(BOT_TOKEN)
-headers = {
-        'x-rapidapi-host': 'hotels4.p.rapidapi.com',
-        'x-rapidapi-key': API_KEY
-    }
-url_id_city = 'https://hotels4.p.rapidapi.com/locations/search'
-url_detail = 'https://hotels4.p.rapidapi.com/properties/list'
-url_lang = 'https://hotels4.p.rapidapi.com/get-meta-data'
-params = {'query': 'new york', 'locale': 'en_US'}
-date_today = datetime.datetime.today().strftime('%Y-%m-%d')
-date_tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
 
 
 query_param = {
         'count_hotels': None,
         'city': None,
-        'sorting': 'PRICE'
+        'sorting': 'PRICE',
+        'locale': None
 }
-
 help_msg = '/lowprice - самые дешёвые отели\n' \
            '/highprice - самые дорогие отели в городе\n' \
            '/bestdeal - отели, подходящие по цене и удаленности от центра\n' \
            '/history - история поиска'
 
 
+@bot.message_handler(commands=['command1'])
+def language(message):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    for elem in get_list_locale():
+        item = types.InlineKeyboardButton(elem['name'], callback_data=elem['hcomLocale'])
+        markup.add(item)
+    bot.send_message(message.from_user.id , text='Выберите язык', reply_markup=markup)
+
 @bot.message_handler(commands=['lowprice'])
 def welcome(message):
     # выбираем язык. Будет скрипт-меню с кнопкой
-    language = 'ru_RU'
+    # language = 'ru_RU'
     bot.send_message(message.chat.id, 'Введите город')
     # тут будет скрипт с библиотекой re, который будет искать похожие названия городов, если
     # не обнаружится совпадений
@@ -88,16 +86,25 @@ def get_city(message, query_param: dict):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
-    count_hotels = call.data
-    print(count_hotels)
-    print(query_param)
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text='Идет поиск отелей', reply_markup=None)
-    query_param['count_hotels'] = count_hotels
-    print(query_param)
-    for hotel in get_hotels(query_param):
-        print(hotel)
-        print(hotel.get_hotel())
-        bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+    if len(call.data) == 5 and call.data[2] == '_':
+        language = call.data
+        print(language)
+        print(query_param)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
+        query_param['locale'] = language
+        print(query_param)
+    else: # str(call.data).isdigit()
+        count_hotels = call.data
+        print(count_hotels)
+        print(query_param)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='Идет поиск отелей', reply_markup=None)
+        query_param['count_hotels'] = count_hotels
+        print(query_param)
+        for hotel in get_hotels(query_param):
+            print(hotel)
+            print(hotel.get_hotel())
+            bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
 
 
 if __name__ == '__main__':

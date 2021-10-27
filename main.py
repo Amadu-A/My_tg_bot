@@ -20,7 +20,8 @@ query_param = {
         'count_hotels': None,
         'city': None,
         'sorting': 'PRICE',
-        'locale': None
+        'locale': 'en_US',
+        'destinationId': None
 }
 help_msg = '/lowprice - самые дешёвые отели\n' \
            '/highprice - самые дорогие отели в городе\n' \
@@ -46,7 +47,8 @@ def welcome(message):
     city = message.text
     city = city.title()
     print(message.text)
-    bot.register_next_step_handler(message, callback=get_city, query_param=query_param)
+    print(query_param)
+    bot.register_next_step_handler(message, callback=keyboard_city) # , query_param=query_param
 
 
 @bot.message_handler(commands=['highprice'])
@@ -65,12 +67,13 @@ def welcome(message):
 def get_textmessages(message):
     bot.send_message(message.from_user.id, text=help_msg)
 
-def get_city(message, query_param: dict):
-    city = message.text
-    print(city)
-    city = city.title()
-
-    query_param['city'] = city
+def get_city_count(message):
+    message = callable(message)
+    # city = message.text
+    # print(city)
+    # city = city.title()
+    #
+    # query_param['city'] = city
 
     # клавиатура
     # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -84,6 +87,28 @@ def get_city(message, query_param: dict):
     markup.add(item1, item2)
     bot.send_message(message.chat.id, 'Выберите количество отелей', reply_markup=markup)
 
+def keyboard_city(message):
+    """Клавиатура с вариантами городов"""
+    chat_id = message.chat.id
+    print(chat_id)
+    city = message.text.lower()
+    print(city)
+    data = get_city_list(city, query_param)
+    print(data)
+    kb_cities = types.InlineKeyboardMarkup(row_width=1)
+    for elem in data:
+        if elem['name'].lower() == city:
+            new_btn = types.InlineKeyboardButton(text=elem['name'] + ',' + elem['caption'].split(',')[-1],
+                                                callback_data=elem['destinationId'],
+                                                 parse_mode='html')        # ('|'.join([str(data.index(elem)), city, str(chat_id)]))
+            kb_cities.add(new_btn)
+    if len(kb_cities.to_dict()['inline_keyboard']) == 0:
+        # логер
+        msg = bot.send_message(chat_id, f'Ошибка! Город{city} не найден. Попробуйте еще раз.')
+        bot.register_next_step_handler(msg, keyboard_city)
+    else:
+        bot.send_message(message.from_user.id, reply_markup=kb_cities, text='Выберите подходящий город:', parse_mode='html')
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     if len(call.data) == 5 and call.data[2] == '_':
@@ -93,7 +118,7 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
         query_param['locale'] = language
         print(query_param)
-    else: # str(call.data).isdigit()
+    elif len(str(call.data)) < 3:
         count_hotels = call.data
         print(count_hotels)
         print(query_param)
@@ -101,10 +126,29 @@ def callback_inline(call):
                               text='Идет поиск отелей', reply_markup=None)
         query_param['count_hotels'] = count_hotels
         print(query_param)
-        for hotel in get_hotels(query_param):
+        for hotel in get_hotels(query_param): # TODO не хватает аргумента city_id
             print(hotel)
             print(hotel.get_hotel())
             bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+    else: # str(call.data).isalpha():
+        print('='*10)
+
+        print(call.data)
+        chat_id = int(call.message.chat.id)
+        print(chat_id)
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
+        #data = get_city_list(call.data.split('|')[1], query_param)
+        #print(data)
+        #index = int(call.data.split('|')[0])
+        index = int(call.data)
+        print(index)
+        #bot.send_message(call.data.chat.id, f'{data[index]["name"] + "," + data[index]["caption"].split(",")[-1]}')
+        # set_user_info('city_name', data[index]['name'], chat_id)
+        # set_user_info('city_id', data[index]['destinationId'], chat_id)
+        # логер
+        query_param['destinationId'] = index
+        bot.register_next_step_handler(call.message, callback=get_city_count)
+        #get_city_count(call.data)
 
 
 if __name__ == '__main__':

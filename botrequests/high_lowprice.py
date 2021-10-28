@@ -42,7 +42,7 @@ def get_hotels(query_param: dict):
     print(json.dumps(result, indent=4))
     list_hotels = []
     for hotel in result:
-        list_hotels.append(User(hotel_id=hotel.get('id'),
+        list_hotels.append(Hotel(hotel_id=hotel.get('id'),
                                 name=hotel.get('name'),
                                 country=hotel.get('address').get('countryName'),
                                 city=hotel.get('address').get('locality'),

@@ -68,12 +68,6 @@ def get_textmessages(message):
     bot.send_message(message.from_user.id, text=help_msg)
 
 def get_city_count(message):
-    message = callable(message)
-    # city = message.text
-    # print(city)
-    # city = city.title()
-    #
-    # query_param['city'] = city
 
     # клавиатура
     # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -100,7 +94,7 @@ def keyboard_city(message):
         if elem['name'].lower() == city:
             new_btn = types.InlineKeyboardButton(text=elem['name'] + ',' + elem['caption'].split(',')[-1],
                                                 callback_data=elem['destinationId'],
-                                                 parse_mode='html')        # ('|'.join([str(data.index(elem)), city, str(chat_id)]))
+                                                 parse_mode='html')
             kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
         # логер
@@ -137,18 +131,18 @@ def callback_inline(call):
         chat_id = int(call.message.chat.id)
         print(chat_id)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
-        #data = get_city_list(call.data.split('|')[1], query_param)
-        #print(data)
-        #index = int(call.data.split('|')[0])
         index = int(call.data)
         print(index)
-        #bot.send_message(call.data.chat.id, f'{data[index]["name"] + "," + data[index]["caption"].split(",")[-1]}')
         # set_user_info('city_name', data[index]['name'], chat_id)
         # set_user_info('city_id', data[index]['destinationId'], chat_id)
         # логер
         query_param['destinationId'] = index
-        bot.register_next_step_handler(call.message, callback=get_city_count)
-        #get_city_count(call.data)
+        get_city_count(call.message)
+
+    def processing_user(id: int):
+        # если id есть в БД sqlite, то работаем с имеющимся инстансом User
+        # если id нет в БД sqlite, то создаем инстанс User
+        pass
 
 
 if __name__ == '__main__':

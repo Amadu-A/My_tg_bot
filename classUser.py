@@ -1,16 +1,16 @@
-class User:
-    def __init__(self, user_id=None, query_param: dict=None):
-        self.user_id = user_id
-        self.query_param = {
-                    'count_hotels': None,
-                    'city': None,
-                    'sorting': 'PRICE',
-                    'locale': 'en_US',
-                    'destinationId': None
-        }
-    def __str__(self):
-        return self.user_id
-
+# class User:
+#     def __init__(self, user_id=None, query_param: dict=None):
+#         self.user_id = user_id
+#         self.query_param = {
+#                     'count_hotels': None,
+#                     'city': None,
+#                     'sorting': 'PRICE',
+#                     'locale': 'en_US',
+#                     'destinationId': None
+#         }
+#     def __str__(self):
+#         return self.user_id
+#
 
 class Hotel:
     def __init__(self, hotel_id=None,

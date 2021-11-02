@@ -3,26 +3,24 @@ import json
 import re
 
 from config import headers, date_today, date_tomorrow, url_id_city, url_detail
-from classUser import *
+from classHotel import *
 
 
 def get_city_list(city_name: str, query_param: dict):
     querystring_search = {'query': city_name.title(), 'locale': query_param['locale']}
-    print(querystring_search)
+    print('11 строка hi-low-price:', querystring_search)
     if re.search(r'[A-Za-z]', city_name):
         querystring_search['locale'] = 'en_US' # TODO надо изменить
     response = requests.request('GET', url_id_city, headers=headers, params=querystring_search)
-    print(json.dumps(response.text, indent=4))
-    print(json.dumps(response.json(), indent=4))
+
+    print('**********')
+    #print(json.dumps(response.json(), indent=4))
+    print('**********'*2)
     print(json.dumps(response.json()['suggestions'][0]['entities'], indent=4))
 
     return response.json()['suggestions'][0]['entities']
 
 def get_hotels(query_param: dict):
-    # querystring_search = {'query': query_param['city'], 'locale': query_param['locale']}
-    # response = json.loads(requests.request('GET', url_id_city, headers=headers, params=querystring_search).text)
-    # print(response)
-    # city_id = response.get('suggestions')[0].get('entities')[0].get('destinationId')
     city_id = query_param['destinationId']
     querystring_detail = {
         'adults1': '1',
@@ -33,7 +31,7 @@ def get_hotels(query_param: dict):
         'checkIn': '{}'.format(date_today),
         'sortOrder': query_param['sorting'],
         'locale': query_param['locale'],
-        'currency': 'RUB'
+        'currency': query_param['currency']       # TODO надо изменить
     }
     print(querystring_detail)
     response = json.loads(requests.request('GET', url_detail, headers=headers, params=querystring_detail).text)
@@ -48,11 +46,13 @@ def get_hotels(query_param: dict):
                                 city=hotel.get('address').get('locality'),
                                 postal_code=hotel.get('address').get('postalCode'),
                                 address=hotel.get('address').get('streetAddress'),
-                                star_rating=hotel.get('star_rating'),
-                                #distance=hotel.get('distance'),
-                                price=hotel.get('ratePlan').get('price').get('current')
+                                star_rating=hotel.get('starRating'),
+                                distance=round(float(hotel.get("landmarks")[0].get('distance').split(' ')[0]) * 1.6093, 2),
+                                price=hotel.get('ratePlan').get('price').get('current'),
                                 # место для фото
-                                #cite=hotel.get('cite')
+                                cite=f'https://hotels.com/search.do?destination-id={city_id}&q-check-in={date_today}'
+                                     f'&q-check-out{date_tomorrow}&q-rooms=1&q-room-0-adults=2&q-room-0-children=0'
+                                     f'&sort-order={querystring_detail["sortOrder"]}'
         ))
     return list_hotels
 

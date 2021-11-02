@@ -13,7 +13,7 @@ from botrequests.high_lowprice import *
 from botrequests.settings import get_list_locale
 
 
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
 
 
 # query_param = {
@@ -40,9 +40,9 @@ def language(message):
 @bot.message_handler(commands=['lowprice', 'highprice'])
 def welcome(message):
     processing_user_db(message)
-    param = get_user_table_db(message)
-    print(param)
-    print(param[-1])
+    value = get_user_table_db(message)
+    print(value)
+    print(value[-1])
     if str(get_user_table_db(message)[-1]).isdigit():
         value = 'en_US'
         adding_values_db(message, value, param='locale')
@@ -54,10 +54,12 @@ def welcome(message):
         'destinationId': None,
         'locale': value
     }
-    if message.text == 'lowprice':
+    print('Команда', message.text)
+    if message.text == '/lowprice':
         query_param['sorting'] = 'PRICE'
-    elif message.text == 'highprice':
-        query_param['sorting'] = 'PRICE'
+    elif message.text == '/highprice':
+        query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
+    adding_values_db(message, query_param['sorting'], param='sorting')
     bot.send_message(message.chat.id, 'Введите город')
     city = message.text
     city = city.title()
@@ -105,24 +107,23 @@ def keyboard_city(message, query_param):
     print(chat_id)
     city = message.text.lower()
     print(city)
-
     print(query_param)
     data = get_city_list(city, query_param)
     print(data)
     kb_cities = types.InlineKeyboardMarkup(row_width=1)
     for elem in data:
-        if elem['name'].lower() == city:
-            new_btn = types.InlineKeyboardButton(text=elem['name'] + ',' + elem['caption'].split(',')[-1],
-                                                callback_data=elem['destinationId'],
-                                                 parse_mode='html')
-            kb_cities.add(new_btn)
+        #if city.lower() in elem['name'].lower():
+        new_btn = types.InlineKeyboardButton(text=elem['name'] + ',' + elem['caption'].split(',')[-1],
+                                                callback_data=f"{elem['destinationId']}+{elem['name']}",
+                                                parse_mode='html')
+        kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
         # логер
         msg = bot.send_message(chat_id, f'Ошибка! Город{city} не найден. Попробуйте еще раз.')
-        bot.register_next_step_handler(msg, keyboard_city)
+        bot.register_next_step_handler(message=msg, callback=keyboard_city, query_param=query_param)
     else:
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
-                                       text='Выберите подходящий город:', parse_mode='html')
+                                       text='Выберите подходящий город или район:', parse_mode='html')
 
         #query_param['destinationId'] = prev_msg.text
         #print(query_param)
@@ -149,12 +150,13 @@ def callback_inline(call):
                               text='Идет поиск отелей', reply_markup=None)
         adding_values_db(call.message, count_hotels, param='count_hotels')
         query_param_tuple = get_user_table_db(call.message)
+        print(query_param_tuple)
         query_param = {
             'count_hotels': query_param_tuple[1],
             'city': query_param_tuple[2],
-            'sorting': query_param_tuple[3],
-            'locale': query_param_tuple[4],
-            'destinationId': query_param_tuple[5]
+            'destinationId': query_param_tuple[3],
+            'sorting': query_param_tuple[4],
+            'locale': query_param_tuple[5]
         }
 
         query_param['count_hotels'] = count_hotels
@@ -171,10 +173,11 @@ def callback_inline(call):
         print(chat_id)
         bot.delete_message(chat_id, call.message.message_id)
         #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
-        index = int(call.data)
-        print(index)
+        value = call.data.split('+')
+        print(value)
         processing_user_db(call.message)
-        adding_values_db(call.message, index, param='destinationId')
+        adding_values_db(call.message, value[0], param='destinationId')
+        adding_values_db(call.message, value[1], param='city')
         # set_user_info('city_name', data[index]['name'], chat_id)
         # set_user_info('city_id', data[index]['destinationId'], chat_id)
         # логер
@@ -215,7 +218,8 @@ def adding_values_db(message, value, param):
     cursor = connect.cursor()
     people_id = message.chat.id
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
-    cursor.execute(f"INSERT INTO users({param}) VALUES({value});")
+    # cursor.execute(f"INSERT INTO users({param}) VALUES(\"{value}\");")
+    cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
     # cursor.execute(f"INSERT INTO users({param}) VALUES(f'{value}');") тоже ошибка
     connect.commit()
 
@@ -223,7 +227,7 @@ def get_user_table_db(message):
     connect = sqlite3.connect('users.db')
     cursor = connect.cursor()
     people_id = message.chat.id
-    cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
+    cursor.execute(f"SELECT * FROM users WHERE user_id = {people_id}")
     one_result = cursor.fetchone()
     return one_result
 

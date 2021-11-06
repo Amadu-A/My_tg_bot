@@ -7,14 +7,15 @@ from classHotel import *
 
 
 def get_city_list(city_name: str, query_param: dict):
-    querystring_search = {'query': city_name.title(), 'locale': query_param['locale']}
+    querystring_search = {'query': city_name.title(), 'locale': query_param['locale'], 'currency': query_param['currency']}
     print('11 строка hi-low-price:', querystring_search)
     if re.search(r'[A-Za-z]', city_name):
         querystring_search['locale'] = 'en_US' # TODO надо изменить
     response = requests.request('GET', url_id_city, headers=headers, params=querystring_search)
-
+    print(response)
     print('**********')
-    #print(json.dumps(response.json(), indent=4))
+    print(response.text)
+    print(json.dumps(response.json(), indent=4))
     print('**********'*2)
     print(json.dumps(response.json()['suggestions'][0]['entities'], indent=4))
 

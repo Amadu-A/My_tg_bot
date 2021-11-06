@@ -1,4 +1,3 @@
-import sqlite3
 import telebot
 from telebot import types
 # import logging
@@ -8,6 +7,7 @@ from config import BOT_TOKEN
 from botrequests.high_lowprice import *
 from botrequests.settings import get_list_locale
 from botrequests.bestdeal import get_best_hotels
+from db.sqdb import processing_user_db, adding_values_db, get_user_table_db
 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
@@ -35,18 +35,18 @@ def language(message):
 
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
 def welcome(message):
-    processing_user_db(message)
-    value = get_user_table_db(message)
+    processing_user_db(message.chat.id)
+    value = get_user_table_db(message.chat.id)
     print(value)
     print(value[-1])
     cur_value = value[-2]
     value = value[-1]
-    if str(get_user_table_db(message)[-1]).isdigit() or get_user_table_db(message)[-1] is None:
+    if str(get_user_table_db(message.chat.id)[-1]).isdigit() or get_user_table_db(message.chat.id)[-1] is None:
         value = 'en_US'
-        adding_values_db(message, value, param='locale')
-    if get_user_table_db(message)[-2] is None:
+        adding_values_db(message.chat.id, value, param='locale')
+    if get_user_table_db(message.chat.id)[-2] is None:
         cur_value = 'USD'
-        adding_values_db(message, cur_value, param='currency')
+        adding_values_db(message.chat.id, cur_value, param='currency')
 
     query_param = {
         'count_hotels': None,
@@ -58,15 +58,15 @@ def welcome(message):
         'locale': value
     }
     print('Команда', message.text)
-    adding_values_db(message, value='no', param='best')
+    adding_values_db(message.chat.id, value='no', param='best')
     if message.text == '/lowprice':
         query_param['sorting'] = 'PRICE'
     elif message.text == '/highprice':
         query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
     elif message.text == '/bestdeal':
         query_param['sorting'] = 'PRICE'
-        adding_values_db(message, value='yes', param='best')
-    adding_values_db(message, query_param['sorting'], param='sorting')
+        adding_values_db(message.chat.id, value='yes', param='best')
+    adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
     bot.send_message(message.chat.id, 'Введите город')
     city = message.text
     city = city.title()
@@ -80,7 +80,7 @@ def welcome(message):
 
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):
-    processing_user_db(message)
+    processing_user_db(message.chat.id)
     bot.send_message(message.from_user.id, text=help_msg)
 
 def keyboard_city(message, query_param):
@@ -108,30 +108,6 @@ def keyboard_city(message, query_param):
                                        text='Выберите подходящий город или район:', parse_mode='html')
 
 def get_city_count(message):
-
-    # if get_user_table_db(message)[-3] == 'yes':
-    #     print(get_user_table_db(message)[-3])
-    #     bot.send_message(message.chat.id, 'Введите ценовой диапазон (например: 100-2000)')
-    #     bot.register_next_step_handler(message, callback=get_size_price)
-    #     try:
-    #         result = message.text.split('-')
-    #         priceMin = min(int(result[0]), int(result[1]))
-    #         priceMax = max(int(result[0]), int(result[1]))
-    #         if priceMin < 0 or priceMax <= 0:
-    #             raise Exception
-    #         adding_values_db(message, priceMin, param='priceMin')
-    #         adding_values_db(message, priceMax, param='priceMax')
-    #         bot.send_message(message.chat.id, 'Введите допустимую удаленность от центра города в метрах')
-    #         if int(message.text) < 0:
-    #             raise Exception
-    #         landmarkIds = round(int(message.text) / 1000 / 1.6093, 1)
-    #         adding_values_db(message, landmarkIds, param='landmarkIds')
-    #     except (TypeError, IndexError, Exception):
-    #         get_city_count(message)
-
-
-        #bot.register_next_step_handler(message, callback=get_size_price)
-
     # клавиатура
     # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     # item1 = types.KeyboardButton('5')
@@ -146,32 +122,40 @@ def get_city_count(message):
     bot.send_message(message.chat.id, 'Выберите количество отелей', reply_markup=markup)
 
 def get_size_price(message):
-    print(get_user_table_db(message)[-3])
+    print(get_user_table_db(message.chat.id)[-3])
     bot.send_message(message.chat.id, 'Введите ценовой диапазон (например: 100-2000)')
     print(message.text.split('-'))
+    bot.register_next_step_handler(message, callback=check_get_size_price)
+
+def check_get_size_price(message):
     try:
         result = message.text.split('-')
         priceMin = min(int(result[0]), int(result[1]))
         priceMax = max(int(result[0]), int(result[1]))
         if priceMin < 0 or priceMax <= 0:
             raise Exception
-        adding_values_db(message, priceMin, param='priceMin')
-        adding_values_db(message, priceMax, param='priceMax')
-        bot.register_next_step_handler(message, callback=get_distance)
+        adding_values_db(message.chat.id, priceMin, param='priceMin')
+        adding_values_db(message.chat.id, priceMax, param='priceMax')
     except (TypeError, IndexError, Exception):
         get_size_price(message)
-    bot.register_next_step_handler(message, callback=get_distance)
+    else:
+        get_distance(message)
 
 def get_distance(message):
+    bot.send_message(message.chat.id, 'Введите допустимую удаленность от центра города в метрах')
+    bot.register_next_step_handler(message, callback=get_check_distance)
+
+def get_check_distance(message):
     try:
-        bot.send_message(message.chat.id, 'Введите допустимую удаленность от центра города в метрах')
         if int(message.text) < 0:
             raise Exception
         landmarkIds = round(int(message.text) / 1000 / 1.6093, 1)
-        adding_values_db(message, landmarkIds, param='landmarkIds')
+        adding_values_db(message.chat.id, landmarkIds, param='landmarkIds')
         bot.register_next_step_handler(message, callback=get_city_count)
     except (TypeError, IndexError, Exception):
         get_distance(message)
+    else:
+        get_city_count(message)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -179,15 +163,15 @@ def callback_inline(call):
         language = call.data
         print(language)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
-        processing_user_db(call.message)
-        adding_values_db(call.message, language, param='locale')
+        processing_user_db(call.message.chat.id)
+        adding_values_db(call.message.chat.id, language, param='locale')
     elif len(str(call.data)) < 3:
         count_hotels = call.data
         print(count_hotels)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text='Идет поиск отелей', reply_markup=None)
-        adding_values_db(call.message, count_hotels, param='count_hotels')
-        query_param_tuple = get_user_table_db(call.message)
+        adding_values_db(call.message.chat.id, count_hotels, param='count_hotels')
+        query_param_tuple = get_user_table_db(call.message.chat.id)
         print(query_param_tuple)
         query_param = {
             'count_hotels': query_param_tuple[1],
@@ -203,19 +187,18 @@ def callback_inline(call):
 
         query_param['count_hotels'] = count_hotels
         print(query_param)
-        if get_user_table_db(call.message)[-3] == 'no':
+        if get_user_table_db(call.message.chat.id)[-3] == 'no':
             for hotel in get_hotels(query_param):
                 print(hotel)
                 print(hotel.get_hotel())
                 bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-        elif get_user_table_db(call.message)[-3] == 'yes':
+        elif get_user_table_db(call.message.chat.id)[-3] == 'yes':
             for hotel in get_best_hotels(query_param):
                 print(hotel)
                 print(hotel.get_hotel())
                 bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-    else: # str(call.data).isalpha():
+    elif '+' in str(call.data):
         print('='*10)
-        #query_param = call.query_param
         print(call.data)
         chat_id = int(call.message.chat.id)
         print(chat_id)
@@ -223,69 +206,17 @@ def callback_inline(call):
         #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
         value = call.data.split('+')
         print(value)
-        processing_user_db(call.message)
-        adding_values_db(call.message, value[0], param='destinationId')
-        adding_values_db(call.message, value[1], param='city')
+        processing_user_db(call.message.chat.id)
+        adding_values_db(call.message.chat.id, value[0], param='destinationId')
+        adding_values_db(call.message.chat.id, value[1], param='city')
         # логер
         #print(call.query_param)
-        if get_user_table_db(call.message)[-3] == 'yes':
+        if get_user_table_db(call.message.chat.id)[-3] == 'yes':
             get_size_price(call.message)
         else:
             get_city_count(call.message)
         #print(call.message)
         #bot.register_next_step_handler(call.message, callback=get_city_count)
-
-def processing_user_db(message):
-    # если id есть в БД sqlite, то работаем с имеющимся инстансом User
-    # если id нет в БД sqlite, то создаем инстанс User
-    connect = sqlite3.connect('users.db')
-    cursor = connect.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS users(
-        user_id INTEGER,
-        count_hotels INT,
-        city TEXT,
-        destinationId INT,
-        sorting TEXT,
-        priceMin INT,
-        priceMax INT,
-        landmarkIds INT,
-        best TEXT,
-        currency TEXT,
-        locale TEXT);
-    """)
-    connect.commit()
-
-    people_id = message.chat.id
-    cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
-    data = cursor.fetchone()
-    if data is None:
-        user_id = [message.chat.id]
-        cursor.execute("INSERT INTO users(user_id) VALUES(?);", user_id)
-        connect.commit()
-    # удаление
-    # people_id = message.chat.id
-    # cursor.execute(f'DELETE FROM login_id WHERE id = {people_id}')
-    # connect.commit()
-
-def adding_values_db(message, value, param):
-    connect = sqlite3.connect('users.db')
-    cursor = connect.cursor()
-    people_id = message.chat.id
-    cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
-    # cursor.execute(f"INSERT INTO users({param}) VALUES(\"{value}\");")
-    cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
-    # cursor.execute(f"INSERT INTO users({param}) VALUES(f'{value}');") тоже ошибка
-    connect.commit()
-
-def get_user_table_db(message):
-    connect = sqlite3.connect('users.db')
-    cursor = connect.cursor()
-    people_id = message.chat.id
-    cursor.execute(f"SELECT * FROM users WHERE user_id = {people_id}")
-    one_result = cursor.fetchone()
-    return one_result
-
-
 
 
 if __name__ == '__main__':

@@ -14,7 +14,7 @@ def processing_user_db(people_id):
         sorting TEXT,
         priceMin INT,
         priceMax INT,
-        landmarkIds INT,
+        landmarkIds REAL,
         best TEXT,
         currency TEXT,
         locale TEXT);

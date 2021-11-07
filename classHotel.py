@@ -25,10 +25,10 @@ class Hotel:
     def get_hotel(self):
         message = f'{self.name}\n\n' \
                   f'Рейтинг {"☆" * int(self.star_rating)}\n' \
-                  f'Адрес {self.country}, {self.city}, {self.address}\n' \
-                  f'Индекс {self.postal_code}\n' \
                   f'Цена за сутки за 1 человека {self.price}\n' \
-                  f'{self.distance} км от центра города\n' \
+                  f'Индекс {self.postal_code}\n' \
+                  f'Адрес {self.country}, {self.city}, {self.address}\n' \
+                  f'{self.distance} от центра города\n' \
                   f'Сайт {self.cite}\n'
         return message
 # f'Рейтинг "☆" * {int(self.star_rating)}\n' \

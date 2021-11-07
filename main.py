@@ -1,29 +1,27 @@
 import telebot
 from telebot import types
+from telebot.types import ReplyKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, InputMediaPhoto
 # import logging
 # import re
 
+
 from config import BOT_TOKEN
 from botrequests.high_lowprice import *
-from botrequests.settings import get_list_locale
+from botrequests.settings import get_list_locale, translate_google
 from botrequests.bestdeal import get_best_hotels
 from db.sqdb import processing_user_db, adding_values_db, get_user_table_db
 
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
-help_msg = '/lowprice - самые дешёвые отели\n' \
-           '/highprice - самые дорогие отели в городе\n' \
-           '/bestdeal - отели, подходящие по цене и удаленности от центра\n' \
-           '/history - история поиска'
-
 
 @bot.message_handler(commands=['command1'])
 def language(message):
     markup = types.InlineKeyboardMarkup(row_width=2)
-    for elem in get_list_locale():
-        item = types.InlineKeyboardButton(elem['name'], callback_data=elem['hcomLocale'])
+    for key, val in get_list_locale().items():
+        item = types.InlineKeyboardButton(key, callback_data=val)
         markup.add(item)
-    bot.send_message(message.from_user.id , text='Выберите язык', reply_markup=markup)
+    text = translate_google('Выберите язык', message.chat.id)
+    bot.send_message(message.from_user.id , text=text, reply_markup=markup)
 
 # @bot.message_handler(commands=['command2'])
 # def language(message):
@@ -64,10 +62,11 @@ def welcome(message):
     elif message.text == '/highprice':
         query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
     elif message.text == '/bestdeal':
-        query_param['sorting'] = 'PRICE'
+        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'
         adding_values_db(message.chat.id, value='yes', param='best')
     adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
-    bot.send_message(message.chat.id, 'Введите город')
+    text = translate_google('Введите город', message.chat.id)
+    bot.send_message(message.chat.id, text)
     city = message.text
     city = city.title()
     print(message.text)
@@ -81,6 +80,11 @@ def welcome(message):
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):
     processing_user_db(message.chat.id)
+    text1 = translate_google('самые дешёвые отели', message.chat.id)
+    text2 = translate_google('самые дорогие отели в городе', message.chat.id)
+    text3 = translate_google('отели, подходящие по цене и удаленности от центра', message.chat.id)
+    text4 = translate_google('история поиска', message.chat.id)
+    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}'.format(text1, text2, text3, text4)
     bot.send_message(message.from_user.id, text=help_msg)
 
 def keyboard_city(message, query_param):
@@ -113,11 +117,11 @@ def get_city_count(message):
     # item1 = types.KeyboardButton('5')
     # item2 = types.KeyboardButton('10')
     # markup.add(item1, item2)
-    print('id города', message.text)
+    print('проверка 119 строка', message.text)
     # print(query_param)
     markup = types.InlineKeyboardMarkup(row_width=2)
-    item1 = types.InlineKeyboardButton('5', callback_data='5')
-    item2 = types.InlineKeyboardButton('10', callback_data='10')
+    item1 = types.InlineKeyboardButton('5', callback_data='6')
+    item2 = types.InlineKeyboardButton('10', callback_data='11')
     markup.add(item1, item2)
     bot.send_message(message.chat.id, 'Выберите количество отелей', reply_markup=markup)
 
@@ -136,26 +140,39 @@ def check_get_size_price(message):
             raise Exception
         adding_values_db(message.chat.id, priceMin, param='priceMin')
         adding_values_db(message.chat.id, priceMax, param='priceMax')
+        get_distance(message)
     except (TypeError, IndexError, Exception):
         get_size_price(message)
-    else:
-        get_distance(message)
 
 def get_distance(message):
     bot.send_message(message.chat.id, 'Введите допустимую удаленность от центра города в метрах')
     bot.register_next_step_handler(message, callback=get_check_distance)
 
-def get_check_distance(message):
+def get_check_distance(message): # TODO исправить, если запятая
     try:
-        if int(message.text) < 0:
+        if float(message.text) < 0:
             raise Exception
-        landmarkIds = round(int(message.text) / 1000 / 1.6093, 1)
+        landmarkIds = round(float(message.text), 2)
+        print(landmarkIds)
         adding_values_db(message.chat.id, landmarkIds, param='landmarkIds')
-        bot.register_next_step_handler(message, callback=get_city_count)
+        get_city_count(message)
     except (TypeError, IndexError, Exception):
         get_distance(message)
-    else:
-        get_city_count(message)
+
+def print_photo(message):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    item1 = types.InlineKeyboardButton('✔', callback_data='yes')
+    item2 = types.InlineKeyboardButton('✘', callback_data='none')
+    markup.add(item1, item2)
+    bot.send_message(message.chat.id, 'Показать фото?', reply_markup=markup)
+
+def get_photos_count(message):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    item1 = types.InlineKeyboardButton('1', callback_data=1)
+    item2 = types.InlineKeyboardButton('3', callback_data=3)
+    item3 = types.InlineKeyboardButton('5', callback_data=5)
+    markup.add(item1, item2, item3)
+    bot.send_message(message.chat.id, 'Сколько фото показать?', reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -165,38 +182,11 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
         processing_user_db(call.message.chat.id)
         adding_values_db(call.message.chat.id, language, param='locale')
-    elif len(str(call.data)) < 3:
-        count_hotels = call.data
+    elif len(str(call.data)) < 3 and int(call.data) > 5:
+        count_hotels = int(call.data) - 1
         print(count_hotels)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='Идет поиск отелей', reply_markup=None)
         adding_values_db(call.message.chat.id, count_hotels, param='count_hotels')
-        query_param_tuple = get_user_table_db(call.message.chat.id)
-        print(query_param_tuple)
-        query_param = {
-            'count_hotels': query_param_tuple[1],
-            'city': query_param_tuple[2],
-            'destinationId': query_param_tuple[3],
-            'sorting': query_param_tuple[4],
-            'priceMin': query_param_tuple[6],
-            'priceMax': query_param_tuple[7],
-            'landmarkIds': query_param_tuple[8],
-            'currency': query_param_tuple[9],
-            'locale': query_param_tuple[10]
-        }
-
-        query_param['count_hotels'] = count_hotels
-        print(query_param)
-        if get_user_table_db(call.message.chat.id)[-3] == 'no':
-            for hotel in get_hotels(query_param):
-                print(hotel)
-                print(hotel.get_hotel())
-                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-        elif get_user_table_db(call.message.chat.id)[-3] == 'yes':
-            for hotel in get_best_hotels(query_param):
-                print(hotel)
-                print(hotel.get_hotel())
-                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+        print_photo(call.message)
     elif '+' in str(call.data):
         print('='*10)
         print(call.data)
@@ -217,6 +207,44 @@ def callback_inline(call):
             get_city_count(call.message)
         #print(call.message)
         #bot.register_next_step_handler(call.message, callback=get_city_count)
+    elif str(call.data) == 'yes':
+        get_photos_count(call.message)
+    elif str(call.data) == 'none' or int(call.data) in range(1,6):
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text='Идет поиск отелей', reply_markup=None)
+        query_param_tuple = get_user_table_db(call.message.chat.id)
+        # print(query_param_tuple)
+        query_param = {
+            'count_hotels': query_param_tuple[1],
+            'city': query_param_tuple[2],
+            'destinationId': query_param_tuple[3],
+            'sorting': query_param_tuple[4],
+            'priceMin': query_param_tuple[5],
+            'priceMax': query_param_tuple[6],
+            'landmarkIds': query_param_tuple[7],
+            'currency': query_param_tuple[-2],
+            'locale': query_param_tuple[-1]
+        }
+        if str(call.data) == 'none':
+            count_photos = 0
+        else:
+            count_photos = int(call.data)
+        if get_user_table_db(call.message.chat.id)[-3] == 'no':
+            for hotel in get_hotels(query_param, count_photos=count_photos):
+                print(hotel)
+                print(hotel.get_hotel())
+                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+                if count_photos > 0:
+                    bot.send_media_group(chat_id=call.message.chat.id,
+                                     media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+        elif get_user_table_db(call.message.chat.id)[-3] == 'yes':
+            for hotel in get_best_hotels(query_param, count_photos=count_photos):
+                print(hotel)
+                print(hotel.get_hotel())
+                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+                if count_photos > 0:
+                    bot.send_media_group(chat_id=call.message.chat.id,
+                                     media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
 
 
 if __name__ == '__main__':

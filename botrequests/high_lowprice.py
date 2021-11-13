@@ -53,10 +53,19 @@ def get_hotels(query_param: dict, count_photos=0):
                                 distance=hotel.get("landmarks")[0].get('distance'),
                                 price=hotel.get('ratePlan').get('price').get('current'),
                                 photo_path_list=get_photos(hotel.get('id'), count_photos),
-                                cite=f'https://hotels.com/search.do?destination-id={city_id}&q-check-in={date_today}'
+                                #cite=f'https://ru.hotels.com/ho{hotel.get("id")}',
+                                cite=f'https://hotels.com/ho{hotel.get("id")}/?q-check-in={date_today}&q-check-out='
+                                     f'{date_tomorrow}&q-rooms=1&q-room-0-adults=1&q-room-0-children=0',
+                                cite_for_db=f'https://hotels.com/search.do?destination-id={city_id}&q-check-in={date_today}'
                                      f'&q-check-out{date_tomorrow}&q-rooms=1&q-room-0-adults=2&q-room-0-children=0'
-                                     f'&sort-order={querystring_detail["sortOrder"]}'
+                                     f'&sort-order={querystring_detail["sortOrder"]}',
+                                user_id=query_param['user_id']
         ))
     return list_hotels
+
+
+# cite = f'https://hotels.com/search.do?destination-id={city_id}&q-check-in={date_today}'
+# f'&q-check-out{date_tomorrow}&q-rooms=1&q-room-0-adults=2&q-room-0-children=0'
+# f'&sort-order={querystring_detail["sortOrder"]}',
 
 #round(float(('.').join(hotel.get("landmarks")[0].get('distance').split(' ')[0].split(','))) * 1.6093, 2)

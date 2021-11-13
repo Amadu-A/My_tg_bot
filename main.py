@@ -33,6 +33,7 @@ def language(message):
 
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
 def welcome(message):
+    """Функция, обрабатывающая команды '/lowprice', '/highprice', '/bestdeal'"""
     processing_user_db(message.chat.id)
     value = get_user_table_db(message.chat.id)
     print(value)
@@ -75,16 +76,21 @@ def welcome(message):
 
 @bot.message_handler(commands=['history'])
 def welcome(message):
+    """Функция, обрабатывающая команду '/history'"""
     bot.send_message(message.chat.id, 'Команда history в стадии разработки')
 
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message):
+    """Функция, помогающая выбрать нужную команду для взаимодействия с ботом"""
     processing_user_db(message.chat.id)
     text1 = translate_google('самые дешёвые отели', message.chat.id)
     text2 = translate_google('самые дорогие отели в городе', message.chat.id)
     text3 = translate_google('отели, подходящие по цене и удаленности от центра', message.chat.id)
     text4 = translate_google('история поиска', message.chat.id)
-    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}'.format(text1, text2, text3, text4)
+    text5 = translate_google('Указанная в результатах поиска цена будет актуальна '
+                             'после авторизации пользователя на сайте,  ', message.chat.id)
+    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n{} hotels.com'.format(
+        text1, text2, text3, text4, text5)
     bot.send_message(message.from_user.id, text=help_msg)
 
 def keyboard_city(message, query_param):
@@ -105,13 +111,16 @@ def keyboard_city(message, query_param):
         kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
         # логер
-        msg = bot.send_message(chat_id, f'Ошибка! Город{city} не найден. Попробуйте еще раз.')
+        text = translate_google(f'Ошибка! Город{city} не найден. Попробуйте еще раз.', message.chat.id)
+        msg = bot.send_message(chat_id, text)
         bot.register_next_step_handler(message=msg, callback=keyboard_city, query_param=query_param)
     else:
+        text = translate_google('Выберите подходящий город или район:', message.chat.id)
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
-                                       text='Выберите подходящий город или район:', parse_mode='html')
+                                       text=text, parse_mode='html')
 
 def get_city_count(message):
+    """Клавиатура с выбором количества отелей"""
     # клавиатура
     # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     # item1 = types.KeyboardButton('5')
@@ -123,15 +132,19 @@ def get_city_count(message):
     item1 = types.InlineKeyboardButton('5', callback_data='6')
     item2 = types.InlineKeyboardButton('10', callback_data='11')
     markup.add(item1, item2)
-    bot.send_message(message.chat.id, 'Выберите количество отелей', reply_markup=markup)
+    text = translate_google('Выберите количество отелей', message.chat.id)
+    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 def get_size_price(message):
+    """Функция для указания ценового диапазона в команде /bestdeal"""
     print(get_user_table_db(message.chat.id)[-3])
-    bot.send_message(message.chat.id, 'Введите ценовой диапазон (например: 100-2000)')
+    text = translate_google('Введите ценовой диапазон (например: 100-2000)', message.chat.id)
+    bot.send_message(message.chat.id, text)
     print(message.text.split('-'))
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
 def check_get_size_price(message):
+    """Функция для обработки ценового диапазона в команде /bestdeal"""
     try:
         result = message.text.split('-')
         priceMin = min(int(result[0]), int(result[1]))
@@ -145,10 +158,13 @@ def check_get_size_price(message):
         get_size_price(message)
 
 def get_distance(message):
-    bot.send_message(message.chat.id, 'Введите допустимую удаленность от центра города в метрах')
+    """Функция для указания параметра удаленности в команде /bestdeal"""
+    text = translate_google('Введите допустимую удаленность от центра города в метрах', message.chat.id)
+    bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=get_check_distance)
 
 def get_check_distance(message): # TODO исправить, если запятая
+    """Функция для обработки параметра удаленности в команде /bestdeal"""
     try:
         if float(message.text) < 0:
             raise Exception
@@ -160,22 +176,36 @@ def get_check_distance(message): # TODO исправить, если запят�
         get_distance(message)
 
 def print_photo(message):
+    """Функция с клавиатурой выбора вывода фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('✔', callback_data='yes')
     item2 = types.InlineKeyboardButton('✘', callback_data='none')
     markup.add(item1, item2)
-    bot.send_message(message.chat.id, 'Показать фото?', reply_markup=markup)
+    text = translate_google('Показать фото?', message.chat.id)
+    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 def get_photos_count(message):
+    """Функция с клавиатурой выбора количества фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('1', callback_data=1)
     item2 = types.InlineKeyboardButton('3', callback_data=3)
     item3 = types.InlineKeyboardButton('5', callback_data=5)
     markup.add(item1, item2, item3)
-    bot.send_message(message.chat.id, 'Сколько фото показать?', reply_markup=markup)
+    text = translate_google('Сколько фото показать?', message.chat.id)
+    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+        1. Выбор языка
+        2. Количество отелей
+        3. id отеля и имя города
+        4. Положительный ответ на вопрос о печати фото
+        5. Отрицательный ответ на печать фото, либо callback c количеством фото
+    :param call: callback_data
+    :return: Any
+    """
     if len(call.data) == 5 and call.data[2] == '_':
         language = call.data
         print(language)
@@ -210,8 +240,9 @@ def callback_inline(call):
     elif str(call.data) == 'yes':
         get_photos_count(call.message)
     elif str(call.data) == 'none' or int(call.data) in range(1,6):
+        text = translate_google('Идет поиск отелей', call.message.chat.id)
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text='Идет поиск отелей', reply_markup=None)
+                              text=text, reply_markup=None)
         query_param_tuple = get_user_table_db(call.message.chat.id)
         # print(query_param_tuple)
         query_param = {
@@ -223,7 +254,8 @@ def callback_inline(call):
             'priceMax': query_param_tuple[6],
             'landmarkIds': query_param_tuple[7],
             'currency': query_param_tuple[-2],
-            'locale': query_param_tuple[-1]
+            'locale': query_param_tuple[-1],
+            'user_id': call.message.chat.id
         }
         if str(call.data) == 'none':
             count_photos = 0

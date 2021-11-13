@@ -1,3 +1,6 @@
+from botrequests.settings import translate_google
+
+
 class Hotel:
     def __init__(self, hotel_id=None,
                  name=None,
@@ -9,7 +12,9 @@ class Hotel:
                  distance=None,
                  price=None,
                  photo_path_list=None,
-                 cite=None):
+                 cite=None,
+                 cite_for_db=None,
+                 user_id=None):
         self.hotel_id = hotel_id
         self.name = name
         self.country = country
@@ -21,15 +26,25 @@ class Hotel:
         self.price = price
         self.photo_path_list = photo_path_list
         self.cite = cite
+        self.cite_for_db = cite_for_db
+        self.user_id = user_id
 
     def get_hotel(self):
+        text1 = translate_google('Рейтинг', self.user_id)
+        text2 = translate_google('Цена за сутки за 1 человека', self.user_id)
+        text3 = translate_google('Индекс', self.user_id)
+        text4 = translate_google('Адрес', self.user_id)
+        text5 = translate_google('от центра города', self.user_id)
+        text6 = translate_google('Сайт', self.user_id)
+
+
         message = f'{self.name}\n\n' \
-                  f'Рейтинг {"☆" * int(self.star_rating)}\n' \
-                  f'Цена за сутки за 1 человека {self.price}\n' \
-                  f'Индекс {self.postal_code}\n' \
-                  f'Адрес {self.country}, {self.city}, {self.address}\n' \
-                  f'{self.distance} от центра города\n' \
-                  f'Сайт {self.cite}\n'
+                  f'{text1} {"☆" * int(self.star_rating)}\n' \
+                  f'{text2} {self.price}\n' \
+                  f'{text3} {self.postal_code}\n' \
+                  f'{text4} {self.country}, {self.city}, {self.address}\n' \
+                  f'{self.distance} {text5}\n' \
+                  f'{text6} {self.cite}\n'
         return message
 # f'Рейтинг "☆" * {int(self.star_rating)}\n' \
 

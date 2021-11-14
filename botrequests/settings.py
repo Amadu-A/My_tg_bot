@@ -109,6 +109,14 @@ def get_list_locale() -> dict:
     }
     return langu_dict
 
+def choose_currency() -> list:
+    cur_lst = ['USD', 'EUR', 'AED', 'ANG', 'ARS', 'AUD', 'BGN', 'BHD', 'BOB', 'BRL', 'BTN', 'BZD', 'CAD', 'CHF', 'CLP', 'CNY',
+     'COP', 'CRC', 'CZK', 'DKK', 'EGP', 'GBP', 'GNF', 'GTQ', 'GYD', 'HKD', 'HNL', 'HRK', 'HUF', 'IDR', 'ILS', 'INR',
+     'ISK', 'JOD', 'JPY', 'KHR', 'KRW', 'KWD', 'KZT', 'LAK', 'LBP', 'LKR', 'MAD', 'MOP', 'MXN', 'MYR', 'NIO', 'NOK',
+     'NZD', 'OMR', 'PAB', 'PEN', 'PHP', 'PKR', 'PLN', 'PYG', 'QAR', 'RON', 'RUB', 'SAR', 'SEK', 'SGD', 'SRD', 'THB',
+     'TND', 'TRY', 'TWD', 'UAH', 'UYU', 'VND']
+    return cur_lst
+
 def translate_google(text: str, id: int, dest_google: str='en') -> str:
     if get_user_table_db(id)[-1] is not None:
         dest_google = get_user_table_db(id)[-1][:2]

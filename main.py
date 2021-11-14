@@ -1,13 +1,13 @@
 import telebot
 from telebot import types
-from telebot.types import ReplyKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, InputMediaPhoto
+from telebot.types import InputMediaPhoto
 # import logging
 # import re
 
 
 from config import BOT_TOKEN
 from botrequests.high_lowprice import *
-from botrequests.settings import get_list_locale, translate_google
+from botrequests.settings import get_list_locale, translate_google, choose_currency
 from botrequests.bestdeal import get_best_hotels
 from db.sqdb import processing_user_db, adding_values_db, get_user_table_db
 
@@ -23,13 +23,14 @@ def language(message):
     text = translate_google('Выберите язык', message.chat.id)
     bot.send_message(message.from_user.id , text=text, reply_markup=markup)
 
-# @bot.message_handler(commands=['command2'])
-# def language(message):
-#     markup = types.InlineKeyboardMarkup(row_width=2)
-#     for elem in get_list_currency():
-#         item = types.InlineKeyboardButton(elem['name'], callback_data=elem['hcomLocale'])
-#         markup.add(item)
-#     bot.send_message(message.from_user.id , text='Выберите валюту', reply_markup=markup)
+@bot.message_handler(commands=['command2'])
+def language(message):
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    for elem in choose_currency():
+        item = types.InlineKeyboardButton(elem, callback_data=elem)
+        markup.add(item)
+    text = translate_google('Выберите валюту', message.chat.id)
+    bot.send_message(message.from_user.id , text=text, reply_markup=markup)
 
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
 def welcome(message):
@@ -143,7 +144,7 @@ def get_size_price(message):
     print(message.text.split('-'))
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
-def check_get_size_price(message):
+def check_get_size_price(message): # TODO использовать регулярку
     """Функция для обработки ценового диапазона в команде /bestdeal"""
     try:
         result = message.text.split('-')
@@ -202,19 +203,23 @@ def callback_inline(call):
         2. Количество отелей
         3. id отеля и имя города
         4. Положительный ответ на вопрос о печати фото
-        5. Отрицательный ответ на печать фото, либо callback c количеством фото
+        5. Выбор валюты
+        6. Отрицательный ответ на печать фото, либо callback c количеством фото
     :param call: callback_data
     :return: Any
     """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text, reply_markup=None)
     if len(call.data) == 5 and call.data[2] == '_':
         language = call.data
         print(language)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
+        #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
         processing_user_db(call.message.chat.id)
         adding_values_db(call.message.chat.id, language, param='locale')
     elif len(str(call.data)) < 3 and int(call.data) > 5:
         count_hotels = int(call.data) - 1
         print(count_hotels)
+
         adding_values_db(call.message.chat.id, count_hotels, param='count_hotels')
         print_photo(call.message)
     elif '+' in str(call.data):
@@ -222,7 +227,7 @@ def callback_inline(call):
         print(call.data)
         chat_id = int(call.message.chat.id)
         print(chat_id)
-        bot.delete_message(chat_id, call.message.message_id)
+        #bot.delete_message(chat_id, call.message.message_id)
         #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
         value = call.data.split('+')
         print(value)
@@ -239,10 +244,15 @@ def callback_inline(call):
         #bot.register_next_step_handler(call.message, callback=get_city_count)
     elif str(call.data) == 'yes':
         get_photos_count(call.message)
+    elif str(call.data).isalpha() and len(str(call.data)) == 3:
+
+        processing_user_db(call.message.chat.id)
+        adding_values_db(call.message.chat.id, str(call.data), param='currency')
     elif str(call.data) == 'none' or int(call.data) in range(1,6):
         text = translate_google('Идет поиск отелей', call.message.chat.id)
-        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                              text=text, reply_markup=None)
+        # bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+        #                       text=text, reply_markup=None)
+        bot.send_message(chat_id=call.message.chat.id, text=text)
         query_param_tuple = get_user_table_db(call.message.chat.id)
         # print(query_param_tuple)
         query_param = {

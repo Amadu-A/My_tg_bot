@@ -2,12 +2,17 @@ from environs import Env
 import datetime
 
 
+
+
 env = Env()
 env.read_env()
 BOT_TOKEN = env.str('BOT_TOKEN')
 ADMIN_ID = env.list('ADMIN_ID')
 IP = env.str('IP')
 API_KEY = env.str('X-RAPIDAPI-KEY2')
+
+URL_TRANSLATE = env.str('URL_TRANSLATE')
+KEY_TRANSLATE = env.str('KEY_TRANSLATE')
 
 
 headers = {

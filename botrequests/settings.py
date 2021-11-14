@@ -2,6 +2,7 @@ import requests
 import json
 
 from googletrans import Translator
+from config import KEY_TRANSLATE, URL_TRANSLATE
 
 from config import url_locale, headers
 from db.sqdb import get_user_table_db
@@ -120,7 +121,6 @@ def choose_currency() -> list:
 def translate_google(text: str, id: int, dest_google: str='en') -> str:
     if get_user_table_db(id)[-1] is not None:
         dest_google = get_user_table_db(id)[-1][:2]
-    print(dest_google)
     if dest_google == 'ru':
         return text
     translator = Translator()
@@ -131,4 +131,17 @@ def translate_google_converter(text: str) -> str:
     translator = Translator()
     newtext = translator.translate(text, dest='en')
     return newtext.text
+
+# def translate_google(text: str, id: int, dest_google: str='en') -> str:
+#     if get_user_table_db(id)[-1] is not None:
+#         dest_google = get_user_table_db(id)[-1][:2]
+#     if dest_google == 'ru':
+#         return text
+#     else:
+#         dest_google = 'ru-' + dest_google
+#     translator = requests.post(URL_TRANSLATE, data={'key': KEY_TRANSLATE, 'text': text, 'lang': dest_google})
+#     newtext = (translator.text)#['text'][0]
+#     return newtext
+
+
 

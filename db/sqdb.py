@@ -15,13 +15,22 @@ def processing_user_db(people_id):
         priceMin INT,
         priceMax INT,
         landmarkIds REAL,
+        check_in TEXT,
+        check_out TEXT,
         best TEXT,
         currency TEXT,
         locale TEXT);
     """)
     connect.commit()
 
-    #people_id = message.chat.id
+    cursor.execute("""CREATE TABLE IF NOT EXISTS orders(
+       order_id INT PRIMARY KEY,
+       user_id INTEGER,
+       cite TEXT,
+       data TEXT);
+    """)
+    connect.commit()
+
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
     data = cursor.fetchone()
     if data is None:
@@ -36,7 +45,6 @@ def processing_user_db(people_id):
 def adding_values_db(people_id, value, param):
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
-    #people_id = message.chat.id
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
     # cursor.execute(f"INSERT INTO users({param}) VALUES(\"{value}\");")
     cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
@@ -46,7 +54,42 @@ def adding_values_db(people_id, value, param):
 def get_user_table_db(people_id):
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
-    #people_id = message.chat.id
     cursor.execute(f"SELECT * FROM users WHERE user_id = {people_id}")
     one_result = cursor.fetchone()
     return one_result
+
+def get_maxorder_db(id: int) -> int:
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
+
+    if len(cursor.fetchall()):
+        print(len(cursor.fetchall()), cursor.fetchall())
+        one_result = max(cursor.fetchall(), key = lambda x: x[0])[0]
+        return one_result
+    else:
+        return 0
+
+def get_data_order_db(id: int): # TODO если пусто, то будет ошибка
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT * FROM orders WHERE user_id = {id} ORDER BY order_id")
+    lst = cursor.fetchall()
+    if len(lst) > 0:
+        return lst
+    else:
+        return [('', 'История пуста')]
+
+def get_order_table_db(id):
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
+    one_result = cursor.fetchall()
+    return one_result
+
+def adding_orders_db(id_order, id_user, cite, value):
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute("""INSERT INTO orders(order_id, user_id, cite, data)
+    VALUES(?, ?, ?, ?);""", (id_order, id_user, cite, value))
+    connect.commit()

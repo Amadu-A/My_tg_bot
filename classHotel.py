@@ -31,7 +31,7 @@ class Hotel:
 
     def get_hotel(self):
         text1 = translate_google('Рейтинг', self.user_id)
-        text2 = translate_google('Цена за сутки за 1 человека', self.user_id)
+        text2 = translate_google('Цена за выбранный период за 1 человека', self.user_id)
         text3 = translate_google('Индекс', self.user_id)
         text4 = translate_google('Адрес', self.user_id)
         text5 = translate_google('от центра города', self.user_id)

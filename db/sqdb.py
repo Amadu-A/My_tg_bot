@@ -2,8 +2,8 @@ import sqlite3
 
 
 def processing_user_db(people_id):
-    # если id есть в БД sqlite, то работаем с имеющимся инстансом User
-    # если id нет в БД sqlite, то создаем инстанс User
+    # если id есть в БД sqlite, то работаем с имеющимся
+    # если id нет в БД sqlite, то создаем
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS users(
@@ -17,7 +17,7 @@ def processing_user_db(people_id):
         landmarkIds REAL,
         check_in TEXT,
         check_out TEXT,
-        best TEXT,
+        command TEXT,
         currency TEXT,
         locale TEXT);
     """)
@@ -26,6 +26,8 @@ def processing_user_db(people_id):
     cursor.execute("""CREATE TABLE IF NOT EXISTS orders(
        order_id INT PRIMARY KEY,
        user_id INTEGER,
+       date TEXT,
+       command TEXT,
        cite TEXT,
        data TEXT);
     """)
@@ -62,10 +64,10 @@ def get_maxorder_db(id: int) -> int:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
-
-    if len(cursor.fetchall()):
-        print(len(cursor.fetchall()), cursor.fetchall())
-        one_result = max(cursor.fetchall(), key = lambda x: x[0])[0]
+    one_result = cursor.fetchall()
+    if len(one_result):
+        print(len(one_result), one_result)
+        one_result = max(one_result, key = lambda x: x[0])[0]
         return one_result
     else:
         return 0
@@ -78,7 +80,7 @@ def get_data_order_db(id: int): # TODO если пусто, то будет ош
     if len(lst) > 0:
         return lst
     else:
-        return [('', 'История пуста')]
+        return [('', '', '', 'История пуста')]
 
 def get_order_table_db(id):
     connect = sqlite3.connect('db\\users.db')
@@ -87,9 +89,9 @@ def get_order_table_db(id):
     one_result = cursor.fetchall()
     return one_result
 
-def adding_orders_db(id_order, id_user, cite, value):
+def adding_orders_db(id_order, id_user, date, command, cite, value):
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
-    cursor.execute("""INSERT INTO orders(order_id, user_id, cite, data)
-    VALUES(?, ?, ?, ?);""", (id_order, id_user, cite, value))
+    cursor.execute("""INSERT INTO orders(order_id, user_id, date, command, cite, data)
+    VALUES(?, ?, ?, ?, ?, ?);""", (id_order, id_user, date, command, cite, value))
     connect.commit()

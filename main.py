@@ -3,13 +3,11 @@ from telebot import types
 from telebot.types import InputMediaPhoto
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import datetime as dt
-# from telebot.types import ReplyKeyboardRemove
 # import logging
-# import re
-
+import re
 
 from config import BOT_TOKEN, date_today, date_tomorrow
-from botrequests.high_lowprice import *
+from botrequests.high_lowprice import get_city_list, get_hotels
 from botrequests.settings import get_list_locale, translate_google, choose_currency
 from botrequests.bestdeal import get_best_hotels
 from db.sqdb import *
@@ -19,7 +17,9 @@ from db.sqdb import *
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
 
 @bot.message_handler(commands=['command1'])
-def language(message):
+def language(message: types.Message):
+    """Инлайн-клавиатура для выбора языка и локали языка"""
+    processing_user_db(message.chat.id)
     markup = types.InlineKeyboardMarkup(row_width=2)
     for key, val in get_list_locale().items():
         item = types.InlineKeyboardButton(key, callback_data=val)
@@ -27,8 +27,25 @@ def language(message):
     text = translate_google('Выберите язык', message.chat.id)
     bot.send_message(message.from_user.id , text=text, reply_markup=markup)
 
+@bot.callback_query_handler(func=lambda call: (len(call.data) == 5 and call.data[2] == '_'))
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+    Выбор языка
+    :param call: locale of the language
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text, reply_markup=None)
+    if len(call.data) == 5 and call.data[2] == '_':
+        language = call.data
+        print(language)
+        #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
+    processing_user_db(call.message.chat.id)
+    adding_values_db(call.message.chat.id, call.data, param='locale')
+
 @bot.message_handler(commands=['command2'])
-def language(message):
+def currency(message: types.Message):
+    processing_user_db(message.chat.id)
     markup = types.InlineKeyboardMarkup(row_width=2)
     for elem in choose_currency():
         item = types.InlineKeyboardButton(elem, callback_data=elem)
@@ -36,10 +53,21 @@ def language(message):
     text = translate_google('Выберите валюту', message.chat.id)
     bot.send_message(message.from_user.id , text=text, reply_markup=markup)
 
+@bot.callback_query_handler(func=lambda call: str(call.data) in choose_currency())
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+    :param call: Выбор валюты
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    processing_user_db(call.message.chat.id)
+    adding_values_db(call.message.chat.id, str(call.data), param='currency')
+
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
-def welcome(message):
+def welcome(message: types.Message):
     """Функция, обрабатывающая команды '/lowprice', '/highprice', '/bestdeal'"""
     processing_user_db(message.chat.id)
+    adding_values_db(message.chat.id, value=message.text, param='command')
     value = get_user_table_db(message.chat.id)
     print(value)
     print(value[-1])
@@ -64,14 +92,14 @@ def welcome(message):
         'locale': value
     }
     print('Команда', message.text)
-    adding_values_db(message.chat.id, value='no', param='best')
+
     if message.text == '/lowprice':
         query_param['sorting'] = 'PRICE'
     elif message.text == '/highprice':
         query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
     elif message.text == '/bestdeal':
-        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'
-        adding_values_db(message.chat.id, value='yes', param='best')
+        query_param['sorting'] = 'PRICE'   #'DISTANCE_FROM_LANDMARK'
+        #adding_values_db(message.chat.id, value='yes', param='best')
     adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
     text = translate_google('Введите город', message.chat.id)
     bot.send_message(message.chat.id, text)
@@ -82,16 +110,17 @@ def welcome(message):
     bot.register_next_step_handler(message, callback=keyboard_city, query_param=query_param)
 
 @bot.message_handler(commands=['history'])
-def history(message):
+def history(message: types.Message):
     """Функция, обрабатывающая команду '/history'"""
     print('что вернулось', get_data_order_db(message.chat.id))
     for request in get_data_order_db(message.chat.id):
         print(request)
-        text = request[-2] + '\n' + request[-1]
+        text = 'Дата и время: ' + request[-4] + '\n' + 'Команда: ' + request[-3] + '\n' + \
+               'Посмотреть на сайте: ' + request[-2] + '\n' + request[-1]
         bot.send_message(chat_id=message.chat.id, text=text)
 
 @bot.message_handler(content_types=['text'])
-def get_textmessages(message):
+def get_textmessages(message: types.Message):
     """Функция, помогающая выбрать нужную команду для взаимодействия с ботом"""
     processing_user_db(message.chat.id)
     text1 = translate_google('самые дешёвые отели', message.chat.id)
@@ -130,7 +159,25 @@ def keyboard_city(message, query_param: dict):
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
                                        text=text, parse_mode='html')
 
-def get_city_count(message):
+@bot.callback_query_handler(func=lambda call: '+' in str(call.data))
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+    :param call: id отеля и имя города
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text, reply_markup=None)
+    print('='*10)
+    print(call.data)
+    value = call.data.split('+')
+    print(value)
+    processing_user_db(call.message.chat.id)
+    adding_values_db(call.message.chat.id, value[0], param='destinationId')
+    adding_values_db(call.message.chat.id, value[1], param='city')
+    bot.send_message(call.message.chat.id, 'Выберите дату заезда')
+    check_in_out(call.message)
+
+def get_city_count(message: types.Message):
     """Клавиатура с выбором количества отелей"""
     # клавиатура
     # markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -146,7 +193,21 @@ def get_city_count(message):
     text = translate_google('Выберите количество отелей', message.chat.id)
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
-def get_size_price(message):
+@bot.callback_query_handler(func=lambda call: len(str(call.data)) < 3 and int(call.data) > 5)
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+    Количество отелей
+    :param call: count_hotels
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text, reply_markup=None)
+    count_hotels = int(call.data) - 1
+    print(count_hotels)
+    adding_values_db(call.message.chat.id, count_hotels, param='count_hotels')
+    print_photo(call.message)
+
+def get_size_price(message: types.Message):
     """Функция для указания ценового диапазона в команде /bestdeal"""
     print(get_user_table_db(message.chat.id)[-3])
     text = translate_google('Введите ценовой диапазон (например: 100-2000)', message.chat.id)
@@ -154,10 +215,13 @@ def get_size_price(message):
     print(message.text.split('-'))
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
-def check_get_size_price(message): # TODO использовать регулярку
+def check_get_size_price(message: types.Message):
     """Функция для обработки ценового диапазона в команде /bestdeal"""
     try:
-        result = message.text.split('-')
+        result = re.findall(r'\d*', message.text)
+        result = [int(size) for size in result if size.isdigit()]
+        if len(result) != 2:
+            raise Exception
         priceMin = min(int(result[0]), int(result[1]))
         priceMax = max(int(result[0]), int(result[1]))
         if priceMin < 0 or priceMax <= 0:
@@ -168,25 +232,22 @@ def check_get_size_price(message): # TODO использовать регуля�
     except (TypeError, IndexError, Exception):
         get_size_price(message)
 
-def get_distance(message):
+def get_distance(message: types.Message):
     """Функция для указания параметра удаленности в команде /bestdeal"""
     text = translate_google('Введите допустимую удаленность от центра города в метрах', message.chat.id)
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=get_check_distance)
 
-def get_check_distance(message): # TODO исправить, если запятая
+def get_check_distance(message: types.Message):
     """Функция для обработки параметра удаленности в команде /bestdeal"""
     try:
-        if float(message.text) < 0:
-            raise Exception
-        landmarkIds = round(float(message.text), 2)
-        print(landmarkIds)
+        landmarkIds = round(float(re.sub(r'[.,\s]', '.', message.text)), 2)
         adding_values_db(message.chat.id, landmarkIds, param='landmarkIds')
         get_city_count(message)
-    except (TypeError, IndexError, Exception):
+    except ValueError:
         get_distance(message)
 
-def print_photo(message):
+def print_photo(message: types.Message):
     """Функция с клавиатурой выбора вывода фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('✔', callback_data='yes')
@@ -195,7 +256,16 @@ def print_photo(message):
     text = translate_google('Показать фото?', message.chat.id)
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
-def get_photos_count(message):
+@bot.callback_query_handler(func=lambda call: str(call.data) == 'yes')
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
+    :param call: Положительный ответ на вопрос о печати фото
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    get_photos_count(call.message)
+
+def get_photos_count(message: types.Message):
     """Функция с клавиатурой выбора количества фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('1', callback_data=1)
@@ -205,12 +275,65 @@ def get_photos_count(message):
     text = translate_google('Сколько фото показать?', message.chat.id)
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
-def check_in_out(message):
+@bot.callback_query_handler(func=lambda call: str(call.data) == 'none' or
+                                              (str(call.data).isdigit() and  len(call.data) == 1))
+def callback_inline(call):
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data
+    :param call: Отрицательный ответ на печать фото, либо callback c количеством фото
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    text = translate_google('Идет поиск отелей', call.message.chat.id)
+    bot.send_message(chat_id=call.message.chat.id, text=text)
+    query_param_tuple = get_user_table_db(call.message.chat.id)
+    query_param = {
+        'count_hotels': query_param_tuple[1],
+        'city': query_param_tuple[2],
+        'destinationId': query_param_tuple[3],
+        'sorting': query_param_tuple[4],
+        'priceMin': query_param_tuple[5],
+        'priceMax': query_param_tuple[6],
+        'landmarkIds': query_param_tuple[7],
+        'check_in': query_param_tuple[8],
+        'check_out': query_param_tuple[9],
+        'currency': query_param_tuple[-2],
+        'locale': query_param_tuple[-1],
+        'user_id': call.message.chat.id
+    }
+    if str(call.data) == 'none':
+        count_photos = 0
+    else:
+        count_photos = int(call.data)
+
+    data = ''
+    order_id = 1
+    hotels_lst = []
+    if get_user_table_db(call.message.chat.id)[-3] != '/bestdeal':
+        hotels_lst = get_hotels(query_param, count_photos=count_photos)
+    elif get_user_table_db(call.message.chat.id)[-3] == '/bestdeal':
+        hotels_lst = get_best_hotels(query_param, count_photos=count_photos)
+    for hotel in hotels_lst:
+        bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+        data += hotel.get_hotel() + '\n'
+        if count_photos > 0:
+            bot.send_media_group(chat_id=call.message.chat.id,
+                             media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+    if get_maxorder_db(call.message.chat.id) != None:
+        order_id = get_maxorder_db(call.message.chat.id) + 1
+    print(get_user_table_db(call.message.chat.id)[-3])
+    adding_orders_db(id_order=order_id,
+                     id_user=call.message.chat.id,
+                     date=dt.datetime.now(),
+                     command=get_user_table_db(call.message.chat.id)[-3],
+                     cite=hotel.cite_for_db,
+                     value=data)
+
+def check_in_out(message: types.Message):
     calendar, step = DetailedTelegramCalendar().build()
     bot.send_message(message.chat.id, f"Select {LSTEP[step]}", reply_markup=calendar)
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
-def cal(c):     # TODO сравнение дат: чек ин и чек аут
+def cal(c):                                                              # TODO сравнение дат: чек ин и чек аут
     result, key, step = DetailedTelegramCalendar().process(c.data)
     if not result and key:
         bot.edit_message_text(f"Select {LSTEP[step]}",
@@ -232,117 +355,10 @@ def cal(c):     # TODO сравнение дат: чек ин и чек аут
             check_in_out(c.message)
         elif get_user_table_db(c.message.chat.id)[9] == 'None':
             adding_values_db(c.message.chat.id, result, param='check_out')
-            if get_user_table_db(c.message.chat.id)[-3] == 'yes':
+            if get_user_table_db(c.message.chat.id)[-3] == '/bestdeal':
                 get_size_price(c.message)
             else:
                 get_city_count(c.message)
-
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
-    """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-        1. Выбор языка
-        2. Количество отелей
-        3. id отеля и имя города
-        4. Положительный ответ на вопрос о печати фото
-        5. Выбор валюты
-        6. Отрицательный ответ на печать фото, либо callback c количеством фото
-    :param call: callback_data
-    :return: Any
-    """
-    bot.delete_message(int(call.message.chat.id), call.message.message_id)
-    #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=call.message.text, reply_markup=None)
-    if len(call.data) == 5 and call.data[2] == '_':
-        language = call.data
-        print(language)
-        #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Вы выбрали язык {language}', reply_markup=None)
-        processing_user_db(call.message.chat.id)
-        adding_values_db(call.message.chat.id, language, param='locale')
-    elif len(str(call.data)) < 3 and int(call.data) > 5:
-        count_hotels = int(call.data) - 1
-        print(count_hotels)
-
-        adding_values_db(call.message.chat.id, count_hotels, param='count_hotels')
-        print_photo(call.message)
-    elif '+' in str(call.data):
-        print('='*10)
-        print(call.data)
-        chat_id = int(call.message.chat.id)
-        print(chat_id)
-        #bot.delete_message(chat_id, call.message.message_id)
-        #bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text=f'Выберите количество отелей', reply_markup=None)
-        value = call.data.split('+')
-        print(value)
-        processing_user_db(call.message.chat.id)
-        adding_values_db(call.message.chat.id, value[0], param='destinationId')
-        adding_values_db(call.message.chat.id, value[1], param='city')
-        # логер
-        #print(call.query_param)
-        bot.send_message(call.message.chat.id, 'Выберите дату заезда')
-        check_in_out(call.message)
-
-        # if get_user_table_db(call.message.chat.id)[-3] == 'yes':
-        #     get_size_price(call.message)
-        # else:
-        #     get_city_count(call.message)
-
-        #print(call.message)
-        #bot.register_next_step_handler(call.message, callback=get_city_count)
-    elif str(call.data) == 'yes':
-        get_photos_count(call.message)
-    elif str(call.data).isalpha() and len(str(call.data)) == 3:
-
-        processing_user_db(call.message.chat.id)
-        adding_values_db(call.message.chat.id, str(call.data), param='currency')
-    elif str(call.data) == 'none' or int(call.data) in range(1,6):
-        text = translate_google('Идет поиск отелей', call.message.chat.id)
-        # bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-        #                       text=text, reply_markup=None)
-        bot.send_message(chat_id=call.message.chat.id, text=text)
-        query_param_tuple = get_user_table_db(call.message.chat.id)
-        # print(query_param_tuple)
-        query_param = {
-            'count_hotels': query_param_tuple[1],
-            'city': query_param_tuple[2],
-            'destinationId': query_param_tuple[3],
-            'sorting': query_param_tuple[4],
-            'priceMin': query_param_tuple[5],
-            'priceMax': query_param_tuple[6],
-            'landmarkIds': query_param_tuple[7],
-            'check_in': query_param_tuple[8],
-            'check_out': query_param_tuple[9],
-            'currency': query_param_tuple[-2],
-            'locale': query_param_tuple[-1],
-            'user_id': call.message.chat.id
-        }
-        if str(call.data) == 'none':
-            count_photos = 0
-        else:
-            count_photos = int(call.data)
-
-        data = ''
-        order_id = 1
-        if get_user_table_db(call.message.chat.id)[-3] == 'no':
-            for hotel in get_hotels(query_param, count_photos=count_photos):
-                print(hotel)
-                print(hotel.get_hotel())
-                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-                data += hotel.get_hotel() + '\n'
-                if count_photos > 0:
-                    bot.send_media_group(chat_id=call.message.chat.id,
-                                     media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
-        elif get_user_table_db(call.message.chat.id)[-3] == 'yes':
-            for hotel in get_best_hotels(query_param, count_photos=count_photos):
-                print(hotel.get_hotel())
-                bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-                data += hotel.get_hotel()+'\n'
-                if count_photos > 0:
-                    bot.send_media_group(chat_id=call.message.chat.id,
-                                     media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
-        if get_maxorder_db(call.message.chat.id) != None:
-            order_id = get_maxorder_db(call.message.chat.id) + 1
-            adding_orders_db(id_order=order_id, id_user=call.message.chat.id, cite=hotel.cite_for_db, value=data)
-
 
 if __name__ == '__main__':
     bot.polling(none_stop=True, interval=0)

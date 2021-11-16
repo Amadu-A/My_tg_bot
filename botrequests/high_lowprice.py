@@ -1,6 +1,5 @@
 import requests
 import json
-import re
 
 from config import headers, date_today, date_tomorrow, url_id_city, url_detail
 from botrequests.get_photos import get_photos

@@ -2,7 +2,6 @@ import requests
 import json
 
 from googletrans import Translator
-from config import KEY_TRANSLATE, URL_TRANSLATE
 
 from config import url_locale, headers
 from db.sqdb import get_user_table_db

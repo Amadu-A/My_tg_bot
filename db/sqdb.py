@@ -1,9 +1,15 @@
 import sqlite3
+from typing import Union
 
 
-def processing_user_db(people_id):
-    # если id есть в БД sqlite, то работаем с имеющимся
-    # если id нет в БД sqlite, то создаем
+def processing_user_db(people_id: int) -> None:
+
+    """
+    Функция, создающая таблицы базы данных SQLite
+    :param people_id: int
+    :return: None
+    """
+
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS users(
@@ -44,16 +50,14 @@ def processing_user_db(people_id):
     # cursor.execute(f'DELETE FROM login_id WHERE id = {people_id}')
     # connect.commit()
 
-def adding_values_db(people_id, value, param):
+def adding_values_db(people_id: int, value: Union[int, str], param: str) -> None:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
-    # cursor.execute(f"INSERT INTO users({param}) VALUES(\"{value}\");")
     cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
-    # cursor.execute(f"INSERT INTO users({param}) VALUES(f'{value}');") тоже ошибка
     connect.commit()
 
-def get_user_table_db(people_id):
+def get_user_table_db(people_id: int) -> list:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM users WHERE user_id = {people_id}")
@@ -72,7 +76,7 @@ def get_maxorder_db(id: int) -> int:
     else:
         return 0
 
-def get_data_order_db(id: int): # TODO если пусто, то будет ошибка
+def get_data_order_db(id: int) -> list: # TODO если пусто, то будет ошибка
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id} ORDER BY order_id")
@@ -82,14 +86,14 @@ def get_data_order_db(id: int): # TODO если пусто, то будет ош
     else:
         return [('', '', '', 'История пуста')]
 
-def get_order_table_db(id):
+def get_order_table_db(id: int) -> list:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
     one_result = cursor.fetchall()
     return one_result
 
-def adding_orders_db(id_order, id_user, date, command, cite, value):
+def adding_orders_db(id_order: int, id_user: int, date: str, command: str, cite: str, value: str) -> None:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute("""INSERT INTO orders(order_id, user_id, date, command, cite, data)

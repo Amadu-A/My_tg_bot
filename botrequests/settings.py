@@ -1,13 +1,17 @@
-import requests
-import json
-
+# import requests
+# import json
 from googletrans import Translator
 
-from config import url_locale, headers
+#from config import url_locale, headers
 from db.sqdb import get_user_table_db
 
 
 def get_list_locale() -> dict:
+    """
+    Функция содержит распарсенный и отсортированный по алфавиту словарь локалей языка с сайта API Hotels
+    При необходимости код моджно раскомментировать и обновить словарь.
+    :return:
+    """
 
     # res = requests.request("GET", url_locale, headers=headers).json()
     # langu_dict = {}

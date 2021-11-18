@@ -3,7 +3,7 @@
 from googletrans import Translator
 
 #from config import url_locale, headers
-from db.sqdb import get_user_table_db
+#from db.sqdb import get_user_table_db
 
 
 def get_list_locale() -> dict:
@@ -121,9 +121,9 @@ def choose_currency() -> list:
      'TND', 'TRY', 'TWD', 'UAH', 'UYU', 'VND']
     return cur_lst
 
-def translate_google(text: str, id: int, dest_google: str='en') -> str:
-    if get_user_table_db(id)[-1] is not None:
-        dest_google = get_user_table_db(id)[-1][:2]
+def translate_google(text: str, dest_google: str='en') -> str:
+    # if get_user_table_db(id)[-1] is not None:
+    #     dest_google = get_user_table_db(id)[-1][:2]
     if dest_google == 'ru':
         return text
     translator = Translator()

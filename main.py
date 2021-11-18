@@ -5,9 +5,9 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import datetime as dt
 import re
 
-from config import BOT_TOKEN, date_today, date_tomorrow
+from config import BOT_TOKEN, ADMIN_ID, date_today, date_tomorrow
 from botrequests.high_lowprice import get_city_list, get_hotels
-from botrequests.settings import get_list_locale, translate_google, choose_currency
+from botrequests.settings import get_list_locale, choose_currency
 from botrequests.bestdeal import get_best_hotels
 from db.sqdb import *
 from logging_module import *
@@ -15,67 +15,33 @@ from logging_module import *
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
 
-@logger.catch
-@bot.message_handler(commands=['command1'])
-def language(message: types.Message) -> None:
-    """Инлайн-клавиатура для выбора языка и локали языка"""
-    processing_user_db(message.chat.id)
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    for key, val in get_list_locale().items():
-        item = types.InlineKeyboardButton(key, callback_data=val)
-        markup.add(item)
-    text = translate_google('Выберите язык', message.chat.id)
-    bot.send_message(message.from_user.id , text=text, reply_markup=markup)
-
-@logger.catch
-@bot.callback_query_handler(func=lambda call: (len(call.data) == 5 and call.data[2] == '_'))
-def callback_inline(call: types.CallbackQuery) -> None:
-    """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-    Выбор языка
-    :param call: locale of the language
-    """
-    bot.delete_message(int(call.message.chat.id), call.message.message_id)
-    processing_user_db(call.message.chat.id)
-    adding_values_db(call.message.chat.id, call.data, param='locale')
-
-@logger.catch
-@bot.message_handler(commands=['command2'])
-def currency(message: types.Message) -> None:
-    processing_user_db(message.chat.id)
-    markup = types.InlineKeyboardMarkup(row_width=2)
-    for elem in choose_currency():
-        item = types.InlineKeyboardButton(elem, callback_data=elem)
-        markup.add(item)
-    text = translate_google('Выберите валюту', message.chat.id)
-    bot.send_message(message.from_user.id , text=text, reply_markup=markup)
-
-@logger.catch
-@bot.callback_query_handler(func=lambda call: str(call.data) in choose_currency())
-def callback_inline(call: types.CallbackQuery) -> None:
-    """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-    :param call: Выбор валюты
-    """
-    bot.delete_message(int(call.message.chat.id), call.message.message_id)
-    processing_user_db(call.message.chat.id)
-    adding_values_db(call.message.chat.id, str(call.data), param='currency')
+def send_to_admin(ADMIN_ID):
+    print(ADMIN_ID)
+    bot.send_message(ADMIN_ID[0], text='Бот запущен!')
+    processing_user_db(int(ADMIN_ID[0]))
+    adding_language_into_languages_db(param='en')
+    if str(get_user_table_db(ADMIN_ID[0])[-1]).isdigit() or get_user_table_db(ADMIN_ID[0])[-1] is None:
+        value = 'en_US'
+        adding_values_db(ADMIN_ID[0], value, param='locale')
+    if get_user_table_db(ADMIN_ID[0])[-2] is None:
+        cur_value = 'USD'
+        adding_values_db(ADMIN_ID[0], cur_value, param='currency')
 
 @logger.catch
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
 def welcome(message: types.Message) -> None:
     """Функция, обрабатывающая команды '/lowprice', '/highprice', '/bestdeal'"""
-    processing_user_db(message.chat.id)
+    adding_user_id_db(id=message.chat.id)
     adding_values_db(message.chat.id, value=message.text, param='command')
     value = get_user_table_db(message.chat.id)
     cur_value = value[-2]
     value = value[-1]
-    if str(get_user_table_db(message.chat.id)[-1]).isdigit() or get_user_table_db(message.chat.id)[-1] is None:
-        value = 'en_US'
-        adding_values_db(message.chat.id, value, param='locale')
-    if get_user_table_db(message.chat.id)[-2] is None:
-        cur_value = 'USD'
-        adding_values_db(message.chat.id, cur_value, param='currency')
+    # if str(get_user_table_db(message.chat.id)[-1]).isdigit() or get_user_table_db(message.chat.id)[-1] is None:
+    #     value = 'en_US'
+    #     adding_values_db(message.chat.id, value, param='locale')
+    # if get_user_table_db(message.chat.id)[-2] is None:
+    #     cur_value = 'USD'
+    #     adding_values_db(message.chat.id, cur_value, param='currency')
     adding_values_db(message.chat.id, None, param='check_in')
     adding_values_db(message.chat.id, None, param='check_out')
     adding_values_db(message.chat.id, None, param='priceMin')
@@ -97,29 +63,44 @@ def welcome(message: types.Message) -> None:
     elif message.text == '/bestdeal':
         query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'   #'DISTANCE_FROM_LANDMARK'
     adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
-    text = translate_google('Введите город', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_7')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=keyboard_city, query_param=query_param)
 
 @logger.catch
 @bot.message_handler(commands=['settings'])
 def settings(message: types.Message) -> None:
-    processing_user_db(message.chat.id)
+    adding_user_id_db(id=message.chat.id)
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('en', callback_data='en_US')
     item2 = types.InlineKeyboardButton('ru', callback_data='ru_RU')
-    item3 = types.InlineKeyboardButton('another', callback_data='another_language')
+    text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_6')
+    item3 = types.InlineKeyboardButton(text1, callback_data='another_language')
     markup.add(item1, item2, item3)
-    text = translate_google('Выберите язык', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
     bot.send_message(message.chat.id, text, reply_markup=markup)
     markup2 = types.InlineKeyboardMarkup(row_width=2)
     item4 = types.InlineKeyboardButton('USD', callback_data='USD')
     item5 = types.InlineKeyboardButton('EUR', callback_data='EUR')
     item6 = types.InlineKeyboardButton('RUB', callback_data='RUB')
-    item7 = types.InlineKeyboardButton('another', callback_data='another_currency')
+    item7 = types.InlineKeyboardButton(text1, callback_data='another_currency')
     markup2.add(item4, item5, item6, item7)
-    text = translate_google('Выберите валюту', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
     bot.send_message(message.chat.id, text, reply_markup=markup2)
+
+@logger.catch
+@bot.callback_query_handler(func=lambda call: (len(call.data) == 5 and call.data[2] == '_') or str(call.data) in choose_currency())
+def callback_inline(call: types.CallbackQuery) -> None:
+    """
+    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data: Выбор языка / Выбор валюты
+    :param call: types.CallbackQuery
+    """
+    bot.delete_message(int(call.message.chat.id), call.message.message_id)
+    if str(call.data) in choose_currency():
+        adding_values_db(call.message.chat.id, str(call.data), param='currency')
+    else:
+        adding_values_db(call.message.chat.id, call.data, param='locale')
+        adding_language_into_languages_db(param=call.data[:2])
 
 @logger.catch
 @bot.callback_query_handler(func=lambda call: str(call.data) == 'another_language' or str(call.data) == 'another_currency')
@@ -134,20 +115,19 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @logger.catch
 def get_language_cur(message: types.Message, param: str) -> None:
     bot.delete_message(int(message.chat.id), message.message_id)
-    processing_user_db(message.chat.id)
     if param == 'another_language':
         markup = types.InlineKeyboardMarkup(row_width=2)
         for key, val in get_list_locale().items():
             item = types.InlineKeyboardButton(key, callback_data=val)
             markup.add(item)
-        text = translate_google('Выберите язык', message.chat.id)
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
         bot.send_message(message.chat.id, text=text, reply_markup=markup)
     else:
         markup = types.InlineKeyboardMarkup(row_width=2)
         for elem in choose_currency():
             item = types.InlineKeyboardButton(elem, callback_data=elem)
             markup.add(item)
-        text = translate_google('Выберите валюту', message.chat.id)
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
         bot.send_message(message.chat.id, text=text, reply_markup=markup)
 
 @logger.catch
@@ -155,8 +135,10 @@ def get_language_cur(message: types.Message, param: str) -> None:
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
     for responce in get_data_order_db(message.chat.id):
-        text = 'Дата и время: ' + responce[-4] + '\n' + 'Команда: ' + responce[-3] + '\n' + \
-               'Посмотреть на сайте: ' + responce[-2] + '\n' + responce[-1]
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_1') + responce[-4]\
+           + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_2')\
+           + responce[-3] + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_3')\
+           + responce[-2] + '\n' + responce[-1]
         bot.send_message(chat_id=message.chat.id, text=text)
 
 @logger.catch
@@ -164,14 +146,14 @@ def history(message: types.Message) -> None:
 def get_textmessages(message: types.Message) -> None:
     """Функция, помогающая выбрать нужную команду для взаимодействия с ботом"""
     processing_user_db(message.chat.id)
-    text1 = translate_google('самые дешёвые отели', message.chat.id)
-    text2 = translate_google('самые дорогие отели в городе', message.chat.id)
-    text3 = translate_google('отели, подходящие по цене и удаленности от центра', message.chat.id)
-    text4 = translate_google('история поиска', message.chat.id)
-    text5 = translate_google('Указанная в результатах поиска цена будет актуальна '
-                             'после авторизации пользователя на сайте,  ', message.chat.id)
-    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/settings\n{} hotels.com'.format(
-        text1, text2, text3, text4, text5)
+    text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_1')
+    text2 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_2')
+    text3 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_3')
+    text4 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_4')
+    text5 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_5')
+    text6 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_6')
+    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/settings - {}\n{} hotels.com'.format(
+        text1, text2, text3, text4, text5, text6)
     bot.send_message(message.from_user.id, text=help_msg)
 
 @logger.catch
@@ -186,11 +168,12 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
                                                 parse_mode='html')
         kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
-        text = translate_google(f'Ошибка! Город{city} не найден. Попробуйте еще раз.', message.chat.id)
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_8') + city.title()\
+               + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_9')
         msg = bot.send_message(message.chat.id, text)
         bot.register_next_step_handler(message=msg, callback=keyboard_city, query_param=query_param)
     else:
-        text = translate_google('Выберите подходящий город или район:', message.chat.id)
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_10')
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
                                        text=text, parse_mode='html')
 
@@ -206,7 +189,8 @@ def callback_inline(call: types.CallbackQuery) -> None:
     processing_user_db(call.message.chat.id)
     adding_values_db(call.message.chat.id, value[0], param='destinationId')
     adding_values_db(call.message.chat.id, value[1], param='city')
-    bot.send_message(call.message.chat.id, 'Выберите дату заезда')
+    text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_18')
+    bot.send_message(call.message.chat.id, text)
     check_in_out(call.message)
 
 @logger.catch
@@ -216,7 +200,7 @@ def get_city_count(message: types.Message) -> None:
     item1 = types.InlineKeyboardButton('5', callback_data='6')
     item2 = types.InlineKeyboardButton('10', callback_data='11')
     markup.add(item1, item2)
-    text = translate_google('Выберите количество отелей', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_11')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -235,7 +219,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @logger.catch
 def get_size_price(message: types.Message) -> None:
     """Функция для указания ценового диапазона в команде /bestdeal"""
-    text = translate_google('Введите ценовой диапазон (например: 100-2000)', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_12')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
@@ -260,7 +244,7 @@ def check_get_size_price(message: types.Message) -> None:
 @logger.catch
 def get_distance(message: types.Message) -> None:
     """Функция для указания параметра удаленности в команде /bestdeal"""
-    text = translate_google('Введите допустимую удаленность от центра города в метрах', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_13')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=get_check_distance)
 
@@ -280,7 +264,7 @@ def print_photo(message: types.Message) -> None:
     item1 = types.InlineKeyboardButton('✔', callback_data='yes')
     item2 = types.InlineKeyboardButton('✘', callback_data='none')
     markup.add(item1, item2)
-    text = translate_google('Показать фото?', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_14')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -301,7 +285,7 @@ def get_photos_count(message: types.Message) -> None:
     item2 = types.InlineKeyboardButton('3', callback_data=3)
     item3 = types.InlineKeyboardButton('5', callback_data=5)
     markup.add(item1, item2, item3)
-    text = translate_google('Сколько фото показать?', message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_15')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -313,7 +297,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     :param call: Отрицательный ответ на печать фото, либо callback c количеством фото
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
-    text = translate_google('Идет поиск отелей', call.message.chat.id)
+    text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_16')
     bot.send_message(chat_id=call.message.chat.id, text=text)
     query_param_tuple = get_user_table_db(call.message.chat.id)
     query_param = {
@@ -347,27 +331,31 @@ def callback_inline(call: types.CallbackQuery) -> None:
         data += hotel.get_hotel() + '\n'
         if count_photos > 0:
             bot.send_media_group(chat_id=call.message.chat.id,
-                             media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+                                media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
     if get_maxorder_db(call.message.chat.id) != None:
         order_id = get_maxorder_db(call.message.chat.id) + 1
     print(get_user_table_db(call.message.chat.id)[-3])
     adding_orders_db(id_order=order_id,
                      id_user=call.message.chat.id,
-                     date=dt.datetime.now(),
+                     date=str(dt.datetime.now()),
                      command=get_user_table_db(call.message.chat.id)[-3],
                      cite=hotel.cite_for_db,
                      value=data)
 
 @logger.catch
 def check_in_out(message: types.Message) -> None:
+    """Функция для формирующая инлайн-календарь"""
     calendar, step = DetailedTelegramCalendar().build()
-    bot.send_message(message.chat.id, f"Select {LSTEP[step]}", reply_markup=calendar)
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_17')
+    bot.send_message(message.chat.id, f"{text} {LSTEP[step]}", reply_markup=calendar)
 
 @logger.catch
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def cal(c: types.CallbackQuery) -> None:                                                              # TODO сравнение дат: чек ин и чек аут
+    """Функция для выбора даты через инлайн-календарь"""
     result, key, step = DetailedTelegramCalendar().process(c.data)
     if not result and key:
+        #text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_17')
         bot.edit_message_text(f"Select {LSTEP[step]}",
                               c.message.chat.id,
                               c.message.message_id,
@@ -375,11 +363,13 @@ def cal(c: types.CallbackQuery) -> None:                                        
     elif result:
         bot.delete_message(int(c.message.chat.id), c.message.message_id)
         if dt.date.today() > result:
-            bot.send_message(c.message.chat.id, 'Дату из прошлого выбирать нельзя')
+            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_19')
+            bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
         elif get_user_table_db(c.message.chat.id)[8] == 'None':
             adding_values_db(c.message.chat.id, result, param='check_in')
-            bot.send_message(c.message.chat.id, 'Выберите дату отъезда')
+            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
+            bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
         elif get_user_table_db(c.message.chat.id)[9] == 'None':
             adding_values_db(c.message.chat.id, result, param='check_out')
@@ -389,4 +379,5 @@ def cal(c: types.CallbackQuery) -> None:                                        
                 get_city_count(c.message)
 
 if __name__ == '__main__':
+    send_to_admin(ADMIN_ID)
     bot.polling(none_stop=True, interval=0)

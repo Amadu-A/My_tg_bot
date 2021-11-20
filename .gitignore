@@ -116,8 +116,9 @@ dmypy.json
 **/.idea/
 
 # db
+*.db
+db/users.db
 .db
 
 #debug
-.log
 debug.json

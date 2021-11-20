@@ -4,8 +4,12 @@ import json
 from config import headers, date_today, date_tomorrow, url_id_city, url_detail
 from botrequests.get_photos import get_photos
 from classHotel import *
+from logging_module import *
 
 
+
+@logger.catch
+@logging_decorator_responce
 def get_city_list(city_name: str, query_param: dict) -> dict:
     """
     Функция парсит город с сайта api Hotels и возвращает словарь с результатом
@@ -17,6 +21,8 @@ def get_city_list(city_name: str, query_param: dict) -> dict:
     response = requests.request('GET', url_id_city, headers=headers, params=querystring_search)
     return response.json()['suggestions'][0]['entities']
 
+@logger.catch
+@logging_decorator_responce
 def get_hotels(query_param: dict, count_photos: int=0) -> list:
     """
     Функция парсит сайт api Hotels с заданными параметрами и возвращает список инстансов Hotel с отелями

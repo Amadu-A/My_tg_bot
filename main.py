@@ -5,6 +5,7 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import datetime as dt
 import re
 
+
 from config import BOT_TOKEN, ADMIN_ID, date_today, date_tomorrow
 from botrequests.high_lowprice import get_city_list, get_hotels
 from botrequests.settings import get_list_locale, choose_currency
@@ -15,8 +16,13 @@ from logging_module import *
 
 bot = telebot.TeleBot(BOT_TOKEN, parse_mode='html')
 
-def send_to_admin(ADMIN_ID):
-    print(ADMIN_ID)
+@logger.catch
+@logging_decorator
+def send_to_admin(ADMIN_ID) -> None:
+    """
+    Сообщение админу о запуске бота, выставление настроек по умолчанию, создание таблиц базы данных
+    :param ADMIN_ID: lst[str]
+    """
     bot.send_message(ADMIN_ID[0], text='Бот запущен!')
     processing_user_db(int(ADMIN_ID[0]))
     adding_language_into_languages_db(param='en')
@@ -28,20 +34,13 @@ def send_to_admin(ADMIN_ID):
         adding_values_db(ADMIN_ID[0], cur_value, param='currency')
 
 @logger.catch
+@logging_decorator
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
 def welcome(message: types.Message) -> None:
     """Функция, обрабатывающая команды '/lowprice', '/highprice', '/bestdeal'"""
     adding_user_id_db(id=message.chat.id)
     adding_values_db(message.chat.id, value=message.text, param='command')
     value = get_user_table_db(message.chat.id)
-    cur_value = value[-2]
-    value = value[-1]
-    # if str(get_user_table_db(message.chat.id)[-1]).isdigit() or get_user_table_db(message.chat.id)[-1] is None:
-    #     value = 'en_US'
-    #     adding_values_db(message.chat.id, value, param='locale')
-    # if get_user_table_db(message.chat.id)[-2] is None:
-    #     cur_value = 'USD'
-    #     adding_values_db(message.chat.id, cur_value, param='currency')
     adding_values_db(message.chat.id, None, param='check_in')
     adding_values_db(message.chat.id, None, param='check_out')
     adding_values_db(message.chat.id, None, param='priceMin')
@@ -53,8 +52,8 @@ def welcome(message: types.Message) -> None:
         'sorting': None,
         'destinationId': None,
         'best': None,
-        'currency': cur_value,
-        'locale': value
+        'currency': value[-2],
+        'locale': value[-1]
     }
     if message.text == '/lowprice':
         query_param['sorting'] = 'PRICE'
@@ -68,6 +67,7 @@ def welcome(message: types.Message) -> None:
     bot.register_next_step_handler(message, callback=keyboard_city, query_param=query_param)
 
 @logger.catch
+@logging_decorator
 @bot.message_handler(commands=['settings'])
 def settings(message: types.Message) -> None:
     adding_user_id_db(id=message.chat.id)
@@ -89,10 +89,11 @@ def settings(message: types.Message) -> None:
     bot.send_message(message.chat.id, text, reply_markup=markup2)
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: (len(call.data) == 5 and call.data[2] == '_') or str(call.data) in choose_currency())
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data: Выбор языка / Выбор валюты
+    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: Выбор языка / Выбор валюты
     :param call: types.CallbackQuery
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
@@ -103,6 +104,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
         adding_language_into_languages_db(param=call.data[:2])
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: str(call.data) == 'another_language' or str(call.data) == 'another_currency')
 def callback_inline(call: types.CallbackQuery) -> None:
     """
@@ -113,6 +115,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     get_language_cur(call.message, call.data)
 
 @logger.catch
+@logging_decorator
 def get_language_cur(message: types.Message, param: str) -> None:
     bot.delete_message(int(message.chat.id), message.message_id)
     if param == 'another_language':
@@ -131,20 +134,36 @@ def get_language_cur(message: types.Message, param: str) -> None:
         bot.send_message(message.chat.id, text=text, reply_markup=markup)
 
 @logger.catch
+@logging_decorator
 @bot.message_handler(commands=['history'])
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
-    for responce in get_data_order_db(message.chat.id):
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_1') + responce[-4]\
-           + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_2')\
-           + responce[-3] + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_3')\
-           + responce[-2] + '\n' + responce[-1]
+    data_order = get_data_order_db(message.chat.id)
+    if data_order[-1][-1] == 'История пуста':
+        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
         bot.send_message(chat_id=message.chat.id, text=text)
+    else:
+        for responce in data_order:
+            text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_1') + responce[-4]\
+               + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_2')\
+               + responce[-3] + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_3')\
+               + responce[-2] + '\n' + responce[-1]
+            bot.send_message(chat_id=message.chat.id, text=text)
 
 @logger.catch
+@logging_decorator
+@bot.message_handler(commands=['clear_history'])
+def history(message: types.Message) -> None:
+    """Функция, обрабатывающая команду '/history'"""
+    clear_history(int(message.chat.id))
+    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
+    bot.send_message(chat_id=message.chat.id, text=text)
+
+@logger.catch
+@logging_decorator
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message: types.Message) -> None:
-    """Функция, помогающая выбрать нужную команду для взаимодействия с ботом"""
+    """Функция, помогающая выбрать нужную команду, реагирует на любой текст, не являющийся командой"""
     processing_user_db(message.chat.id)
     text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_1')
     text2 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_2')
@@ -152,11 +171,13 @@ def get_textmessages(message: types.Message) -> None:
     text4 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_4')
     text5 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_5')
     text6 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_6')
-    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/settings - {}\n{} hotels.com'.format(
-        text1, text2, text3, text4, text5, text6)
+    text7 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_7')
+    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/clear_history - {}' \
+               '\n/settings - {}\n{} hotels.com'.format(text1, text2, text3, text4, text7, text5, text6)
     bot.send_message(message.from_user.id, text=help_msg)
 
 @logger.catch
+@logging_decorator
 def keyboard_city(message: types.Message, query_param: dict) -> None:
     """Клавиатура с вариантами городов"""
     city = message.text.lower()
@@ -178,11 +199,11 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
                                        text=text, parse_mode='html')
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: '+' in str(call.data))
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-    :param call: id отеля и имя города
+    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: id отеля и имя города
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
     value = call.data.split('+')
@@ -194,6 +215,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     check_in_out(call.message)
 
 @logger.catch
+@logging_decorator
 def get_city_count(message: types.Message) -> None:
     """Клавиатура с выбором количества отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -204,12 +226,11 @@ def get_city_count(message: types.Message) -> None:
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: len(str(call.data)) < 3 and int(call.data) > 5)
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-    Количество отелей
-    :param call: count_hotels
+    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: Количество отелей
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
     count_hotels = int(call.data) - 1
@@ -217,6 +238,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     print_photo(call.message)
 
 @logger.catch
+@logging_decorator
 def get_size_price(message: types.Message) -> None:
     """Функция для указания ценового диапазона в команде /bestdeal"""
     text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_12')
@@ -224,6 +246,7 @@ def get_size_price(message: types.Message) -> None:
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
 @logger.catch
+@logging_decorator
 def check_get_size_price(message: types.Message) -> None:
     """Функция для обработки ценового диапазона в команде /bestdeal"""
     try:
@@ -242,6 +265,7 @@ def check_get_size_price(message: types.Message) -> None:
         get_size_price(message)
 
 @logger.catch
+@logging_decorator
 def get_distance(message: types.Message) -> None:
     """Функция для указания параметра удаленности в команде /bestdeal"""
     text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_13')
@@ -258,6 +282,7 @@ def get_check_distance(message: types.Message) -> None:
         get_distance(message)
 
 @logger.catch
+@logging_decorator
 def print_photo(message: types.Message) -> None:
     """Функция с клавиатурой выбора вывода фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -268,16 +293,17 @@ def print_photo(message: types.Message) -> None:
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: str(call.data) == 'yes')
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает события в соответствии со значением callback_data:
-    :param call: Положительный ответ на вопрос о печати фото
+    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: Положительный ответ на вопрос о печати фото
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
     get_photos_count(call.message)
 
 @logger.catch
+@logging_decorator
 def get_photos_count(message: types.Message) -> None:
     """Функция с клавиатурой выбора количества фотографий отелей"""
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -289,6 +315,7 @@ def get_photos_count(message: types.Message) -> None:
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=lambda call: str(call.data) == 'none' or
                                               (str(call.data).isdigit() and  len(call.data) == 1))
 def callback_inline(call: types.CallbackQuery) -> None:
@@ -326,30 +353,36 @@ def callback_inline(call: types.CallbackQuery) -> None:
         hotels_lst = get_hotels(query_param, count_photos=count_photos)
     elif get_user_table_db(call.message.chat.id)[-3] == '/bestdeal':
         hotels_lst = get_best_hotels(query_param, count_photos=count_photos)
-    for hotel in hotels_lst:
-        bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
-        data += hotel.get_hotel() + '\n'
-        if count_photos > 0:
-            bot.send_media_group(chat_id=call.message.chat.id,
-                                media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
-    if get_maxorder_db(call.message.chat.id) != None:
-        order_id = get_maxorder_db(call.message.chat.id) + 1
-    print(get_user_table_db(call.message.chat.id)[-3])
-    adding_orders_db(id_order=order_id,
-                     id_user=call.message.chat.id,
-                     date=str(dt.datetime.now()),
-                     command=get_user_table_db(call.message.chat.id)[-3],
-                     cite=hotel.cite_for_db,
-                     value=data)
+    if not len(hotels_lst):
+        #raise Exception('Список отелей пуст')
+        #text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_22')
+        bot.send_message(call.message.chat.id, text='Отелей по вашему запросу не найдено')              # TODO
+    else:
+        for hotel in hotels_lst:
+            bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+            data += hotel.get_hotel() + '\n'
+            if count_photos > 0:
+                bot.send_media_group(chat_id=call.message.chat.id,
+                                    media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+        if get_maxorder_db(call.message.chat.id) != None:
+            order_id = get_maxorder_db(call.message.chat.id) + 1
+        adding_orders_db(id_order=order_id,
+                         id_user=call.message.chat.id,
+                         date=str(dt.datetime.now()),
+                         command=get_user_table_db(call.message.chat.id)[-3],
+                         cite=hotel.cite_for_db,
+                         value=data)
 
 @logger.catch
+@logging_decorator
 def check_in_out(message: types.Message) -> None:
     """Функция для формирующая инлайн-календарь"""
     calendar, step = DetailedTelegramCalendar().build()
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_17')
-    bot.send_message(message.chat.id, f"{text} {LSTEP[step]}", reply_markup=calendar)
+    #text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_17')
+    bot.send_message(message.chat.id, f"Select {LSTEP[step]}", reply_markup=calendar)
 
 @logger.catch
+@logging_decorator
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
 def cal(c: types.CallbackQuery) -> None:                                                              # TODO сравнение дат: чек ин и чек аут
     """Функция для выбора даты через инлайн-календарь"""

@@ -1,4 +1,3 @@
-from botrequests.settings import translate_google
 from db.sqdb import get_translated_item_db, get_user_table_db
 
 

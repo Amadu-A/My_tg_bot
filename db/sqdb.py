@@ -8,7 +8,7 @@ def processing_user_db(people_id: int) -> None:
     """
     Функция, создающая таблицы базы данных SQLite
     При добавлении колонок выполнить команду:
-    ALTER TABLE languages ADD COLUMN <имя_колонки-bot_22> TEXT AFTER <имя_колонки-bot_21>;
+    ALTER TABLE languages ADD COLUMN <имя_колонки-bot_23> TEXT AFTER <имя_колонки-bot_22>;
     :param people_id: int
     :return: None
     """
@@ -47,7 +47,7 @@ def processing_user_db(people_id: int) -> None:
         command_1 TEXT,  command_2 TEXT,  command_3 TEXT,  command_4 TEXT,  command_5 TEXT,  command_6 TEXT, command_7 TEXT,
         bot_1 TEXT, bot_2 TEXT, bot_3 TEXT, bot_4 TEXT, bot_5 TEXT, bot_6 TEXT, bot_7 TEXT, bot_8 TEXT, bot_9 TEXT, 
         bot_10 TEXT, bot_11 TEXT, bot_12 TEXT, bot_13 TEXT, bot_14 TEXT, bot_15 TEXT, bot_16 TEXT, bot_17 TEXT,
-        bot_18 TEXT, bot_19 TEXT, bot_20 TEXT, bot_21 TEXT,
+        bot_18 TEXT, bot_19 TEXT, bot_20 TEXT, bot_21 TEXT, bot_22 TEXT,
         msg_1 TEXT, msg_2 TEXT,  msg_3 TEXT,  msg_4 TEXT,  msg_5 TEXT,  msg_6 TEXT);
     """)
 
@@ -83,6 +83,7 @@ def processing_user_db(people_id: int) -> None:
         'Дату из прошлого выбирать нельзя',
         'Выберите дату отъезда',
         'История пуста',
+        'Отелей по вашему запросу не найдено',
 
         'Рейтинг',
         'Цена за выбранный период за 1 человека',
@@ -98,10 +99,10 @@ def processing_user_db(people_id: int) -> None:
         cursor.execute("""INSERT INTO languages(language,
                 command_1,  command_2,  command_3,  command_4,  command_5,  command_6, command_7,
                 bot_1, bot_2, bot_3, bot_4, bot_5, bot_6, bot_7, bot_8, bot_9, bot_10, bot_11, bot_12, bot_13, bot_14,
-                bot_15, bot_16, bot_17, bot_18, bot_19, bot_20, bot_21,
+                bot_15, bot_16, bot_17, bot_18, bot_19, bot_20, bot_21, bot_22,
                 msg_1, msg_2,  msg_3,  msg_4,  msg_5,  msg_6
                 )
-                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
+                VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""",
                        text_tpl)
         connect.commit()
 

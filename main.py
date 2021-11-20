@@ -355,8 +355,8 @@ def callback_inline(call: types.CallbackQuery) -> None:
         hotels_lst = get_best_hotels(query_param, count_photos=count_photos)
     if not len(hotels_lst):
         #raise Exception('Список отелей пуст')
-        #text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_22')
-        bot.send_message(call.message.chat.id, text='Отелей по вашему запросу не найдено')              # TODO
+        text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_22')
+        bot.send_message(call.message.chat.id, text=text)
     else:
         for hotel in hotels_lst:
             bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())

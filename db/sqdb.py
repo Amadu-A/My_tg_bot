@@ -1,8 +1,10 @@
 import sqlite3
 from typing import Union
 from botrequests.settings import translate_google
+from logging_module import *
 
-
+@logger.catch
+@logging_decorator
 def processing_user_db(people_id: int) -> None:
 
     """
@@ -113,13 +115,19 @@ def processing_user_db(people_id: int) -> None:
         cursor.execute("INSERT INTO users(user_id) VALUES(?);", user_id)
         connect.commit()
 
+@logger.catch
+@logging_decorator
 def clear_history(id: int) -> None:
+    """Удаляет историю из таблицы oders по id пользователя"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f'DELETE FROM orders WHERE user_id = {id}')
     connect.commit()
 
+@logger.catch
+@logging_decorator
 def adding_user_id_db(id: int) -> None:
+    """Функция добавляет id нового пользователя в таблицу users"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {id}")
@@ -129,21 +137,30 @@ def adding_user_id_db(id: int) -> None:
         cursor.execute("INSERT INTO users(user_id) VALUES(?);", user_id)
         connect.commit()
 
+@logger.catch
+@logging_decorator
 def adding_values_db(people_id: int, value: Union[int, float, str, None], param: str) -> None:
+    """Функция добавляет значение по id пользователя в таблицу users"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
     cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
     connect.commit()
 
+@logger.catch
+@logging_decorator_responce
 def get_user_table_db(people_id: int) -> list:
+    """Функция возвращает список кортежа по id пользователя из таблицы users"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM users WHERE user_id = {people_id}")
     one_result = cursor.fetchone()
     return one_result
 
+@logger.catch
+@logging_decorator_responce
 def get_maxorder_db(id: int) -> int:
+    """Функция возвращает последний номер записи по id пользователя из таблицы orders"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
@@ -154,7 +171,10 @@ def get_maxorder_db(id: int) -> int:
     else:
         return 0
 
+@logger.catch
+@logging_decorator_responce
 def get_data_order_db(id: int) -> list:
+    """Функция возвращает список из таблицы orders для истории поиска"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id} ORDER BY order_id")
@@ -164,21 +184,30 @@ def get_data_order_db(id: int) -> list:
     else:
         return [('', '', '', 'История пуста')]
 
+@logger.catch
+@logging_decorator_responce
 def get_order_table_db(id: int) -> list:
+    """Функция возвращает список из таблицы orders"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
     one_result = cursor.fetchall()
     return one_result
 
+@logger.catch
+@logging_decorator
 def adding_orders_db(id_order: int, id_user: int, date: str, command: str, cite: str, value: str) -> None:
+    """Функция добавляет данные в таблицу orders"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute("""INSERT INTO orders(order_id, user_id, date, command, cite, data)
     VALUES(?, ?, ?, ?, ?, ?);""", (id_order, id_user, date, command, cite, value))
     connect.commit()
 
+@logger.catch
+@logging_decorator
 def adding_language_into_languages_db(param: str) -> None:
+    """Функция добавляет язык в таблицу languages"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT language FROM languages WHERE language = '{param}'")
@@ -187,7 +216,10 @@ def adding_language_into_languages_db(param: str) -> None:
         cursor.execute("INSERT INTO languages(language) VALUES(?);", [param])
         connect.commit()
 
+@logger.catch
+@logging_decorator_responce
 def get_translated_item_db(language: str, param: str) -> str:
+    """Функция возвращает переведенное значение из таблицы languages, либо переводит его и добавляет в таблицу languages"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = \"{language}\"")
@@ -198,7 +230,10 @@ def get_translated_item_db(language: str, param: str) -> str:
         connect.commit()
     return one_result
 
+@logger.catch
+@logging_decorator_responce
 def get_rus_text(param: str) -> str:
+    """Функция возвращает русский текст, если локаль русская"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = 'ru'")

@@ -33,6 +33,14 @@ def send_to_admin(ADMIN_ID) -> None:
         cur_value = 'USD'
         adding_values_db(ADMIN_ID[0], cur_value, param='currency')
 
+def set_locale_new_user(message):
+    if str(get_user_table_db(message.chat.id)[-1]).isdigit() or get_user_table_db(message.chat.id)[-1] is None:
+        value = 'en_US'
+        adding_values_db(message.chat.id, value, param='locale')
+    if get_user_table_db(message.chat.id)[-2] is None:
+        cur_value = 'USD'
+        adding_values_db(message.chat.id, cur_value, param='currency')
+
 @logger.catch
 @logging_decorator
 @bot.message_handler(commands=['lowprice', 'highprice', 'bestdeal'])
@@ -40,6 +48,7 @@ def welcome(message: types.Message) -> None:
     """Функция, обрабатывающая команды '/lowprice', '/highprice', '/bestdeal'"""
     adding_user_id_db(id=message.chat.id)
     adding_values_db(message.chat.id, value=message.text, param='command')
+    set_locale_new_user(message)
     value = get_user_table_db(message.chat.id)
     adding_values_db(message.chat.id, None, param='check_in')
     adding_values_db(message.chat.id, None, param='check_out')
@@ -71,6 +80,7 @@ def welcome(message: types.Message) -> None:
 @bot.message_handler(commands=['settings'])
 def settings(message: types.Message) -> None:
     adding_user_id_db(id=message.chat.id)
+    set_locale_new_user(message)
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('en', callback_data='en_US')
     item2 = types.InlineKeyboardButton('ru', callback_data='ru_RU')
@@ -117,6 +127,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @logger.catch
 @logging_decorator
 def get_language_cur(message: types.Message, param: str) -> None:
+    """Составление инлайн-кнопок по выбору языка и валюты"""
     bot.delete_message(int(message.chat.id), message.message_id)
     if param == 'another_language':
         markup = types.InlineKeyboardMarkup(row_width=2)
@@ -138,6 +149,7 @@ def get_language_cur(message: types.Message, param: str) -> None:
 @bot.message_handler(commands=['history'])
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
+    set_locale_new_user(message)
     data_order = get_data_order_db(message.chat.id)
     if data_order[-1][-1] == 'История пуста':
         text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
@@ -155,6 +167,7 @@ def history(message: types.Message) -> None:
 @bot.message_handler(commands=['clear_history'])
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
+    set_locale_new_user(message)
     clear_history(int(message.chat.id))
     text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
     bot.send_message(chat_id=message.chat.id, text=text)
@@ -165,6 +178,7 @@ def history(message: types.Message) -> None:
 def get_textmessages(message: types.Message) -> None:
     """Функция, помогающая выбрать нужную команду, реагирует на любой текст, не являющийся командой"""
     processing_user_db(message.chat.id)
+    set_locale_new_user(message)
     text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_1')
     text2 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_2')
     text3 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_3')

@@ -1,7 +1,7 @@
 import requests
 import json
 
-from config import headers, date_today, date_tomorrow, url_id_city, url_detail
+from config import headers, url_id_city, url_detail
 from botrequests.get_photos import get_photos
 from classHotel import *
 from logging_module import *

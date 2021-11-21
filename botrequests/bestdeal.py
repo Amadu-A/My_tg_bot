@@ -2,11 +2,14 @@ import requests
 import json
 
 
-from config import headers, date_today, date_tomorrow, url_detail
+from config import headers, url_detail
 from classHotel import *
 from botrequests.get_photos import get_photos
+from logging_module import *
 
 
+@logger.catch
+@logging_decorator_responce
 def get_best_hotels(query_param: dict, count_photos=0) -> list:
     """
     Функция парсит сайт api Hotels с заданными параметрами и возвращает список инстансов Hotel с отелями

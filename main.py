@@ -6,7 +6,7 @@ import datetime as dt
 import re
 
 
-from config import BOT_TOKEN, ADMIN_ID, date_today, date_tomorrow
+from config import BOT_TOKEN, ADMIN_ID
 from botrequests.high_lowprice import get_city_list, get_hotels
 from botrequests.settings import get_list_locale, choose_currency
 from botrequests.bestdeal import get_best_hotels
@@ -60,7 +60,7 @@ def welcome(message: types.Message) -> None:
     elif message.text == '/highprice':
         query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
     elif message.text == '/bestdeal':
-        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'   #'DISTANCE_FROM_LANDMARK'
+        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'   #'DISTANCE_FROM_LANDMARK'                       # TODO
     adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
     text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_7')
     bot.send_message(message.chat.id, text)
@@ -385,7 +385,7 @@ def check_in_out(message: types.Message) -> None:
 @logger.catch
 @logging_decorator
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
-def cal(c: types.CallbackQuery) -> None:                                                              # TODO сравнение дат: чек ин и чек аут
+def cal(c: types.CallbackQuery) -> None:
     """Функция для выбора даты через инлайн-календарь"""
     result, key, step = DetailedTelegramCalendar().process(c.data)
     if not result and key:

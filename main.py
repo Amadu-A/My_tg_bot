@@ -297,7 +297,8 @@ def print_photo(message: types.Message) -> None:
 @bot.callback_query_handler(func=lambda call: str(call.data) == 'yes')
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: Положительный ответ на вопрос о печати фото
+    Хендлер для инлайн-клавиатуры. Отлавливает значением callback_data:
+    :param call: Положительный ответ на вопрос о печати фото
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
     get_photos_count(call.message)
@@ -394,6 +395,7 @@ def cal(c: types.CallbackQuery) -> None:                                        
                               c.message.message_id,
                               reply_markup=key)
     elif result:
+        res = dt.datetime.strptime(str(result), "%Y-%m-%d")
         bot.delete_message(int(c.message.chat.id), c.message.message_id)
         if dt.date.today() > result:
             text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_19')
@@ -404,12 +406,16 @@ def cal(c: types.CallbackQuery) -> None:                                        
             text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
             bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
-        elif get_user_table_db(c.message.chat.id)[9] == 'None':
+        elif get_user_table_db(c.message.chat.id)[9] == 'None' and dt.datetime.strptime(str(get_user_table_db(c.message.chat.id)[8]), "%Y-%m-%d") < res:
             adding_values_db(c.message.chat.id, result, param='check_out')
             if get_user_table_db(c.message.chat.id)[-3] == '/bestdeal':
                 get_size_price(c.message)
             else:
                 get_city_count(c.message)
+        else:
+            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
+            bot.send_message(c.message.chat.id, text)
+            check_in_out(c.message)
 
 if __name__ == '__main__':
     send_to_admin(ADMIN_ID)

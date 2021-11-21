@@ -3,8 +3,8 @@ import functools
 from typing import Callable
 
 
-logger.add('debug.log', format='{time} {level} {message}',
-           level='DEBUG', rotation='1 week', compression='zip') #serialize=True
+logger.add('debug.json', format='{time} {level} {message}',
+           level='DEBUG', rotation='1 week', compression='zip', serialize=True)
 
 
 def logging_decorator(func: Callable) -> Callable:

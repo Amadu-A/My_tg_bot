@@ -71,7 +71,7 @@ def welcome(message: types.Message) -> None:
     elif message.text == '/bestdeal':
         query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'   #'DISTANCE_FROM_LANDMARK'                       # TODO
     adding_values_db(message.chat.id, query_param['sorting'], param='sorting')
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_7')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_7')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=keyboard_city, query_param=query_param)
 
@@ -84,10 +84,10 @@ def settings(message: types.Message) -> None:
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('en', callback_data='en_US')
     item2 = types.InlineKeyboardButton('ru', callback_data='ru_RU')
-    text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_6')
+    text1 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_6')
     item3 = types.InlineKeyboardButton(text1, callback_data='another_language')
     markup.add(item1, item2, item3)
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
     bot.send_message(message.chat.id, text, reply_markup=markup)
     markup2 = types.InlineKeyboardMarkup(row_width=2)
     item4 = types.InlineKeyboardButton('USD', callback_data='USD')
@@ -95,7 +95,7 @@ def settings(message: types.Message) -> None:
     item6 = types.InlineKeyboardButton('RUB', callback_data='RUB')
     item7 = types.InlineKeyboardButton(text1, callback_data='another_currency')
     markup2.add(item4, item5, item6, item7)
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
     bot.send_message(message.chat.id, text, reply_markup=markup2)
 
 @logger.catch
@@ -134,14 +134,14 @@ def get_language_cur(message: types.Message, param: str) -> None:
         for key, val in get_list_locale().items():
             item = types.InlineKeyboardButton(key, callback_data=val)
             markup.add(item)
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
+        text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_4')
         bot.send_message(message.chat.id, text=text, reply_markup=markup)
     else:
         markup = types.InlineKeyboardMarkup(row_width=2)
         for elem in choose_currency():
             item = types.InlineKeyboardButton(elem, callback_data=elem)
             markup.add(item)
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
+        text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_5')
         bot.send_message(message.chat.id, text=text, reply_markup=markup)
 
 @logger.catch
@@ -152,13 +152,13 @@ def history(message: types.Message) -> None:
     set_locale_new_user(message)
     data_order = get_data_order_db(message.chat.id)
     if data_order[-1][-1] == 'История пуста':
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
+        text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
         bot.send_message(chat_id=message.chat.id, text=text)
     else:
         for responce in data_order:
-            text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_1') + responce[-4]\
-               + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_2')\
-               + responce[-3] + '\n' + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_3')\
+            text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_1') + responce[-4]\
+               + '\n' + get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_2')\
+               + responce[-3] + '\n' + get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_3')\
                + responce[-2] + '\n' + responce[-1]
             bot.send_message(chat_id=message.chat.id, text=text)
 
@@ -169,7 +169,7 @@ def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
     set_locale_new_user(message)
     clear_history(int(message.chat.id))
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
     bot.send_message(chat_id=message.chat.id, text=text)
 
 @logger.catch
@@ -179,15 +179,16 @@ def get_textmessages(message: types.Message) -> None:
     """Функция, помогающая выбрать нужную команду, реагирует на любой текст, не являющийся командой"""
     processing_user_db(message.chat.id)
     set_locale_new_user(message)
-    text1 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_1')
-    text2 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_2')
-    text3 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_3')
-    text4 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_4')
-    text5 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_5')
-    text6 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_6')
-    text7 = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='command_7')
-    help_msg = '/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/clear_history - {}' \
-               '\n/settings - {}\n{} hotels.com'.format(text1, text2, text3, text4, text7, text5, text6)
+    text1 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_1')
+    text2 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_2')
+    text3 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_3')
+    text4 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_4')
+    text5 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_5')
+    text6 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_6')
+    text7 = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='command_7')
+    help_msg = "/lowprice - {}\n/highprice - {}\n/bestdeal - {}\n/history - {}\n/clear_history - {}" \
+               "\n/settings - {}\n{} hotels.com\nThis is a self-learning bot. If you change the language, " \
+               "but it's still Russian, change it to English".format(text1, text2, text3, text4, text7, text5, text6)
     bot.send_message(message.from_user.id, text=help_msg)
 
 @logger.catch
@@ -203,12 +204,12 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
                                                 parse_mode='html')
         kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_8') + city.title()\
-               + get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_9')
+        text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_8') + ' ' + city.title() + ' '\
+               + get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_9')
         msg = bot.send_message(message.chat.id, text)
         bot.register_next_step_handler(message=msg, callback=keyboard_city, query_param=query_param)
     else:
-        text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_10')
+        text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_10')
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
                                        text=text, parse_mode='html')
 
@@ -224,7 +225,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     processing_user_db(call.message.chat.id)
     adding_values_db(call.message.chat.id, value[0], param='destinationId')
     adding_values_db(call.message.chat.id, value[1], param='city')
-    text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_18')
+    text = get_translated_item_db(call.message.chat.id, language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_18')
     bot.send_message(call.message.chat.id, text)
     check_in_out(call.message)
 
@@ -236,7 +237,7 @@ def get_city_count(message: types.Message) -> None:
     item1 = types.InlineKeyboardButton('5', callback_data='6')
     item2 = types.InlineKeyboardButton('10', callback_data='11')
     markup.add(item1, item2)
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_11')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_11')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -255,7 +256,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @logging_decorator
 def get_size_price(message: types.Message) -> None:
     """Функция для указания ценового диапазона в команде /bestdeal"""
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_12')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_12')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=check_get_size_price)
 
@@ -282,7 +283,7 @@ def check_get_size_price(message: types.Message) -> None:
 @logging_decorator
 def get_distance(message: types.Message) -> None:
     """Функция для указания параметра удаленности в команде /bestdeal"""
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_13')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_13')
     bot.send_message(message.chat.id, text)
     bot.register_next_step_handler(message, callback=get_check_distance)
 
@@ -303,7 +304,7 @@ def print_photo(message: types.Message) -> None:
     item1 = types.InlineKeyboardButton('✔', callback_data='yes')
     item2 = types.InlineKeyboardButton('✘', callback_data='none')
     markup.add(item1, item2)
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_14')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_14')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -326,7 +327,7 @@ def get_photos_count(message: types.Message) -> None:
     item2 = types.InlineKeyboardButton('3', callback_data=3)
     item3 = types.InlineKeyboardButton('5', callback_data=5)
     markup.add(item1, item2, item3)
-    text = get_translated_item_db(language=get_user_table_db(message.chat.id)[-1][:2], param='bot_15')
+    text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_15')
     bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @logger.catch
@@ -339,7 +340,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
     :param call: Отрицательный ответ на печать фото, либо callback c количеством фото
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
-    text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_16')
+    text = get_translated_item_db(call.message.chat.id, language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_16')
     bot.send_message(chat_id=call.message.chat.id, text=text)
     query_param_tuple = get_user_table_db(call.message.chat.id)
     query_param = {
@@ -370,7 +371,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
         hotels_lst = get_best_hotels(query_param, count_photos=count_photos)
     if not len(hotels_lst):
         #raise Exception('Список отелей пуст')
-        text = get_translated_item_db(language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_22')
+        text = get_translated_item_db(call.message.chat.id, language=get_user_table_db(call.message.chat.id)[-1][:2], param='bot_22')
         bot.send_message(call.message.chat.id, text=text)
     else:
         for hotel in hotels_lst:
@@ -412,12 +413,12 @@ def cal(c: types.CallbackQuery) -> None:
         res = dt.datetime.strptime(str(result), "%Y-%m-%d")
         bot.delete_message(int(c.message.chat.id), c.message.message_id)
         if dt.date.today() > result:
-            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_19')
+            text = get_translated_item_db(c.message.chat.id, language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_19')
             bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
         elif get_user_table_db(c.message.chat.id)[8] == 'None':
             adding_values_db(c.message.chat.id, result, param='check_in')
-            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
+            text = get_translated_item_db(c.message.chat.id, language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
             bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
         elif get_user_table_db(c.message.chat.id)[9] == 'None' and dt.datetime.strptime(str(get_user_table_db(c.message.chat.id)[8]), "%Y-%m-%d") < res:
@@ -427,7 +428,7 @@ def cal(c: types.CallbackQuery) -> None:
             else:
                 get_city_count(c.message)
         else:
-            text = get_translated_item_db(language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
+            text = get_translated_item_db(c.message.chat.id, language=get_user_table_db(c.message.chat.id)[-1][:2], param='bot_20')
             bot.send_message(c.message.chat.id, text)
             check_in_out(c.message)
 

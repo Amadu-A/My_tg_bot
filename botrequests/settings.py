@@ -111,12 +111,14 @@ def choose_currency() -> list:
     return cur_lst
 
 def translate_google(text: str, dest_google: str='en') -> str:
-
-    if dest_google == 'ru':
+    try:
+        if dest_google == 'ru':
+            return text
+        translator = Translator()
+        newtext = translator.translate(text, dest=dest_google, src='ru')
+        return newtext.text
+    except Exception:
         return text
-    translator = Translator()
-    newtext = translator.translate(text, dest=dest_google, src='ru')
-    return newtext.text
 
 def translate_google_converter(text: str) -> str:
     translator = Translator()

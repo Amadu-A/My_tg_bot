@@ -37,12 +37,12 @@ class Hotel:
         Метод для формирования сообщения, которое будет отправляться пользователю бота с результатами запроса
         :return: str
         """
-        text1 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_1')
-        text2 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_2')
-        text3 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_3')
-        text4 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_4')
-        text5 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_5')
-        text6 = get_translated_item_db(language=get_user_table_db(self.user_id)[-1][:2], param='msg_6')
+        text1 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_1')
+        text2 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_2')
+        text3 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_3')
+        text4 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_4')
+        text5 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_5')
+        text6 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_6')
 
         message = f'{self.name}\n\n' \
                   f'{text1} {"☆" * int(self.star_rating)}\n' \

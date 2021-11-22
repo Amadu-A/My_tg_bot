@@ -71,8 +71,8 @@ def processing_user_db(people_id: int) -> None:
         'Выберите валюту',
         'Другой',
         'Введите город',
-        'Ошибка! Город ',
-        ' не найден. Попробуйте еще раз.',
+        'Ошибка! Город',
+        'не найден. Попробуйте еще раз.',
         'Выберите подходящий город или район:',
         'Выберите количество отелей',
         'Введите ценовой диапазон (например: 100-2000)',
@@ -163,7 +163,7 @@ def get_maxorder_db(id: int) -> int:
     """Функция возвращает последний номер записи по id пользователя из таблицы orders"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
-    cursor.execute(f"SELECT * FROM orders WHERE user_id = {id}")
+    cursor.execute(f"SELECT * FROM orders")    #  WHERE user_id = {id}
     one_result = cursor.fetchall()
     if len(one_result):
         one_result = max(one_result, key = lambda x: x[0])[0]
@@ -218,7 +218,7 @@ def adding_language_into_languages_db(param: str) -> None:
 
 @logger.catch
 @logging_decorator_responce
-def get_translated_item_db(language: str, param: str) -> str:
+def get_translated_item_db(id, language: str, param: str) -> str:
     """Функция возвращает переведенное значение из таблицы languages, либо переводит его и добавляет в таблицу languages"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
@@ -226,8 +226,12 @@ def get_translated_item_db(language: str, param: str) -> str:
     one_result = cursor.fetchone()[0]
     if one_result is None:
         one_result = translate_google(text=get_rus_text(param), dest_google=language)
-        cursor.execute(f"UPDATE languages SET \"{param}\" = \"{one_result}\" WHERE language = \"{language}\"")
-        connect.commit()
+        if one_result != get_rus_text(param):
+            cursor.execute(f"UPDATE languages SET \"{param}\" = \"{one_result}\" WHERE language = \"{language}\"")
+            connect.commit()
+        else:
+            one_result = one_result[0]  # 'Выбранная локализация сегодня недоступна. ' +
+            adding_values_db(id, value='ru_RU', param='locale')
     return one_result
 
 @logger.catch

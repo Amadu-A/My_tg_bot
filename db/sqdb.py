@@ -223,7 +223,9 @@ def get_translated_item_db(id, language: str, param: str) -> str:
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = \"{language}\"")
-    one_result = cursor.fetchone()[0]
+    one_result = cursor.fetchone()
+    #print(one_result, one_result[0])
+    one_result = one_result[0]
     if one_result is None:
         one_result = translate_google(text=get_rus_text(param), dest_google=language)
         if one_result != get_rus_text(param):

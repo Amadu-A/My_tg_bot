@@ -224,10 +224,14 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
     data = get_city_list(city, query_param)
     kb_cities = types.InlineKeyboardMarkup(row_width=1)
     for elem in data:
+        #elem['name'] = ''.join(list(map(lambda x: x if (x.isalpha() or x == '-') else ' ', elem['name'])))[:29]
         new_btn = types.InlineKeyboardButton(text=elem['name'] + ',' + elem['caption'].split(',')[-1],
-                                             callback_data=f"{elem['destinationId']}+{elem['name']}",
-                                             parse_mode='html')
-        print(new_btn)
+                                             callback_data=f"{elem['destinationId']}+{elem['name'][:25]}"
+                                             ) # parse_mode='html' {elem['name']}
+        #new = ''.join(list(map(lambda x: x if (x.isalpha() or x in ['-', ' ']) else ' ', elem['name'])))
+        # print(elem['name'].split(' '))
+        # print(elem['name'], len(elem['name']), len(f"{elem['destinationId']}+{elem['name']}"))
+        # print(new_btn)
         kb_cities.add(new_btn)
     if len(kb_cities.to_dict()['inline_keyboard']) == 0:
         text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2],
@@ -239,8 +243,8 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
     else:
         text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2],
                                       param='bot_10')
-        print(text)
-        print(kb_cities)
+        # print(text)
+        # print(kb_cities)
         bot.send_message(message.from_user.id, reply_markup=kb_cities,
                          text=text, parse_mode='html')
 
@@ -250,7 +254,7 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
 @bot.callback_query_handler(func=lambda call: '+' in str(call.data))
 def callback_inline(call: types.CallbackQuery) -> None:
     """
-    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: id отеля и имя города
+    Хендлер для инлайн-клавиатуры. Отлавливает значение callback_data: id города и имя города
     """
     bot.delete_message(int(call.message.chat.id), call.message.message_id)
     value = call.data.split('+')

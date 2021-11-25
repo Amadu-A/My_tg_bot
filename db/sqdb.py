@@ -3,10 +3,10 @@ from typing import Union
 from botrequests.settings import translate_google
 from logging_module import *
 
+
 @logger.catch
 @logging_decorator
 def processing_user_db(people_id: int) -> None:
-
     """
     Функция, создающая таблицы базы данных SQLite
     При добавлении колонок выполнить команду:
@@ -115,6 +115,7 @@ def processing_user_db(people_id: int) -> None:
         cursor.execute("INSERT INTO users(user_id) VALUES(?);", user_id)
         connect.commit()
 
+
 @logger.catch
 @logging_decorator
 def clear_history(id: int) -> None:
@@ -123,6 +124,7 @@ def clear_history(id: int) -> None:
     cursor = connect.cursor()
     cursor.execute(f'DELETE FROM orders WHERE user_id = {id}')
     connect.commit()
+
 
 @logger.catch
 @logging_decorator
@@ -137,6 +139,7 @@ def adding_user_id_db(id: int) -> None:
         cursor.execute("INSERT INTO users(user_id) VALUES(?);", user_id)
         connect.commit()
 
+
 @logger.catch
 @logging_decorator
 def adding_values_db(people_id: int, value: Union[int, float, str, None], param: str) -> None:
@@ -146,6 +149,7 @@ def adding_values_db(people_id: int, value: Union[int, float, str, None], param:
     cursor.execute(f"SELECT user_id FROM users WHERE user_id = {people_id}")
     cursor.execute(f"UPDATE users SET {param} = \"{value}\" WHERE user_id = {people_id}")
     connect.commit()
+
 
 @logger.catch
 @logging_decorator_responce
@@ -157,19 +161,21 @@ def get_user_table_db(people_id: int) -> list:
     one_result = cursor.fetchone()
     return one_result
 
+
 @logger.catch
 @logging_decorator_responce
 def get_maxorder_db(id: int) -> int:
     """Функция возвращает последний номер записи по id пользователя из таблицы orders"""
     connect = sqlite3.connect('db\\users.db')
     cursor = connect.cursor()
-    cursor.execute(f"SELECT * FROM orders")    #  WHERE user_id = {id}
+    cursor.execute(f"SELECT * FROM orders")  # WHERE user_id = {id}
     one_result = cursor.fetchall()
     if len(one_result):
-        one_result = max(one_result, key = lambda x: x[0])[0]
+        one_result = max(one_result, key=lambda x: x[0])[0]
         return one_result
     else:
         return 0
+
 
 @logger.catch
 @logging_decorator_responce
@@ -184,6 +190,7 @@ def get_data_order_db(id: int) -> list:
     else:
         return [('', '', '', 'История пуста')]
 
+
 @logger.catch
 @logging_decorator_responce
 def get_order_table_db(id: int) -> list:
@@ -194,6 +201,7 @@ def get_order_table_db(id: int) -> list:
     one_result = cursor.fetchall()
     return one_result
 
+
 @logger.catch
 @logging_decorator
 def adding_orders_db(id_order: int, id_user: int, date: str, command: str, cite: str, value: str) -> None:
@@ -203,6 +211,7 @@ def adding_orders_db(id_order: int, id_user: int, date: str, command: str, cite:
     cursor.execute("""INSERT INTO orders(order_id, user_id, date, command, cite, data)
     VALUES(?, ?, ?, ?, ?, ?);""", (id_order, id_user, date, command, cite, value))
     connect.commit()
+
 
 @logger.catch
 @logging_decorator
@@ -216,6 +225,7 @@ def adding_language_into_languages_db(param: str) -> None:
         cursor.execute("INSERT INTO languages(language) VALUES(?);", [param])
         connect.commit()
 
+
 @logger.catch
 @logging_decorator_responce
 def get_translated_item_db(id, language: str, param: str) -> str:
@@ -224,9 +234,9 @@ def get_translated_item_db(id, language: str, param: str) -> str:
     cursor = connect.cursor()
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = \"{language}\"")
     one_result = cursor.fetchone()
-    #print(one_result, one_result[0])
-    one_result = one_result[0]
-    if one_result is None:
+    # print(one_result, one_result[0])
+    # one_result = one_result[0]
+    if not one_result:
         one_result = translate_google(text=get_rus_text(param), dest_google=language)
         if one_result != get_rus_text(param):
             cursor.execute(f"UPDATE languages SET \"{param}\" = \"{one_result}\" WHERE language = \"{language}\"")
@@ -234,7 +244,8 @@ def get_translated_item_db(id, language: str, param: str) -> str:
         else:
             one_result = one_result[0]  # 'Выбранная локализация сегодня недоступна. ' +
             adding_values_db(id, value='ru_RU', param='locale')
-    return one_result
+    return one_result[0]
+
 
 @logger.catch
 @logging_decorator_responce

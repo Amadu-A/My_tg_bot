@@ -5,6 +5,7 @@ class Hotel:
     """
     Класс для хранения параметров по каждому отелю
     """
+
     def __init__(self, hotel_id=None,
                  name=None,
                  country=None,

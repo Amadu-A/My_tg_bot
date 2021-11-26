@@ -235,14 +235,21 @@ def get_translated_item_db(id, language: str, param: str) -> str:
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = \"{language}\"")
     one_result = cursor.fetchone()
     # print(one_result, one_result[0])
+    if isinstance(one_result, tuple):
+        print('1', one_result)
+        if type(one_result[0]) == type(None):
+            one_result = None
     # one_result = one_result[0]
     if not one_result:
         one_result = translate_google(text=get_rus_text(param), dest_google=language)
+        print('2', one_result)
         if one_result != get_rus_text(param):
             cursor.execute(f"UPDATE languages SET \"{param}\" = \"{one_result}\" WHERE language = \"{language}\"")
             connect.commit()
+            one_result = (one_result,)
         else:
-            one_result = one_result[0]  # 'Выбранная локализация сегодня недоступна. ' +
+            #one_result = one_result[0]  # 'Выбранная локализация сегодня недоступна. ' +
+            print('3', one_result)
             adding_values_db(id, value='ru_RU', param='locale')
     return one_result[0]
 

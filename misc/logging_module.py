@@ -3,13 +3,13 @@ import functools
 from typing import Callable
 
 
-logger.add('debug.json', format='{time} {level} {message}',
+logger.add('misc\\debug.json', format='{time} {level} {message}',
            level='DEBUG', rotation='1 week', compression='zip', serialize=True)
 
 
 def logging_decorator(func: Callable) -> Callable:
     """
-    Декоратор, логгирующий работу кода
+    Декоратор, логгирующий работу кода функций, которые ничего не возвращают
     """
 
     @functools.wraps(func)
@@ -21,7 +21,9 @@ def logging_decorator(func: Callable) -> Callable:
 
 def logging_decorator_responce(func: Callable) -> Callable:
     """
-    Декоратор, логгирующий работу кода
+    Декоратор, логгирующий работу кода функций, у которых есть варианты возврата значений
+    Может констатировать ошибку при успешно завершенной функции. Например, если вернется пустой список городов
+    Это лишь информационное уведомление и ошибкой не является.
     """
 
     @functools.wraps(func)

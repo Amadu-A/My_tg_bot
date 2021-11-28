@@ -114,6 +114,8 @@ def translate_google(text: str, dest_google: str='en') -> str:
     try:
         if dest_google == 'ru':
             return text
+        elif dest_google == 'zh':
+            dest_google = 'zh-cn'
         translator = Translator()
         newtext = translator.translate(text, dest=dest_google, src='ru')
         return newtext.text

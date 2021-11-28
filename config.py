@@ -1,5 +1,10 @@
 from environs import Env
 import datetime
+#import itertools
+
+
+#def rotate_RAPIDAPI_KEY():
+
 
 env = Env()
 env.read_env()
@@ -7,7 +12,7 @@ env.read_env()
 BOT_TOKEN = env.str('BOT_TOKEN')
 ADMIN_ID = env.list('ADMIN_ID')
 IP = env.str('IP')
-API_KEY = env.str('X-RAPIDAPI-KEY2')
+API_KEY = env.str('X-RAPIDAPI-KEY3')
 
 headers = {
     'x-rapidapi-host': 'hotels4.p.rapidapi.com',

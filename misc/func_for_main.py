@@ -89,7 +89,7 @@ def inline_settings(message_chat_id):
     return text, markup, text2, markup2
 
 def inline_photo_cnt():
-    """Фу"""
+    """Формирование инлайн-клавиатуры с выбором количества фото для функции callback_inline"""
     markup = types.InlineKeyboardMarkup(row_width=2)
     item1 = types.InlineKeyboardButton('1', callback_data=1)
     item2 = types.InlineKeyboardButton('3', callback_data=3)

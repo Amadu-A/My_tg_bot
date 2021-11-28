@@ -3,7 +3,7 @@ import json
 from requests.exceptions import Timeout
 from typing import Union
 
-from config import headers, url_detail
+from config import headers, url_detail #rotate_RAPIDAPI_KEY
 from misc.classHotel import *
 from botrequests.get_photos import get_photos
 from misc.logging_module import *
@@ -34,7 +34,13 @@ def get_best_hotels(query_param: dict, count_photos=0) -> Union[list, str]:
         'landmarkIds': float(query_param['landmarkIds'])
     }
     try:
-        response = json.loads(requests.request('GET', url_detail, headers=headers, params=querystring_detail, timeout=10).text)
+        response = json.loads(requests.request('GET',
+                                               url_detail,
+                                               headers=headers,
+                                               params=querystring_detail,
+                                               timeout=10).text)
+        if 'You have exceeded' in str(response.get('message')) or 'Upgrade your plan at' in str(response.get('message')):
+            raise BaseException
         result = response.get('data').get('body').get('searchResults').get('results')
         list_hotels = []
         for hotel in result:
@@ -48,13 +54,17 @@ def get_best_hotels(query_param: dict, count_photos=0) -> Union[list, str]:
                                      distance=hotel.get("landmarks")[0].get('distance'),
                                      price=hotel.get('ratePlan').get('price').get('current'),
                                      photo_path_list=get_photos(hotel.get('id'), count_photos),
-                                     cite=f'https://hotels.com/ho{hotel.get("id")}/?q-check-in={query_param["check_in"]}&q-check-out='
+                                     cite=f'https://hotels.com/ho{hotel.get("id")}/?q-check-in={query_param["check_in"]}'
+                                          f'&q-check-out='
                                           f'{query_param["check_out"]}&q-rooms=1&q-room-0-adults=1&q-room-0-children=0',
-                                     cite_for_db=f'https://hotels.com/search.do?destination-id={city_id}&q-check-in={query_param["check_in"]}'
-                                                 f'&q-check-out{query_param["check_out"]}&q-rooms=1&q-room-0-adults=2&q-room-0-children=0'
+                                     cite_for_db=f'https://hotels.com/search.do?destination-id={city_id}'
+                                                 f'&q-check-in={query_param["check_in"]}'
+                                                 f'&q-check-out{query_param["check_out"]}'
+                                                 f'&q-rooms=1&q-room-0-adults=2&q-room-0-children=0'
                                                  f'&sort-order={querystring_detail["sortOrder"]}',
                                      user_id=query_param['user_id']
                                      ))
         return list_hotels
     except Timeout:
         return 'Время ожидания истекло'                 # TODO
+

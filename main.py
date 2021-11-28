@@ -203,9 +203,10 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @logging_decorator
 def get_city_count(message: types.Message) -> None:
     """Клавиатура с выбором количества отелей"""
-    markup = types.InlineKeyboardMarkup(row_width=2)
+    markup = types.InlineKeyboardMarkup(row_width=3)
     item1 = types.InlineKeyboardButton('5', callback_data='6')
     item2 = types.InlineKeyboardButton('10', callback_data='11')
+    #item3 = types.InlineKeyboardButton('25', callback_data='26')
     markup.add(item1, item2)
     text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_11')
     bot.send_message(message.chat.id, text, reply_markup=markup)
@@ -340,7 +341,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
         bot.send_message(call.message.chat.id, text=text)
     else:
         for hotel in hotels_lst:
-            bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel())
+            bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel(), disable_web_page_preview=True)
             data += hotel.get_hotel() + '\n'
             if count_photos > 0:
                 bot.send_media_group(chat_id=call.message.chat.id,

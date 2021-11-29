@@ -344,8 +344,16 @@ def callback_inline(call: types.CallbackQuery) -> None:
             bot.send_message(chat_id=call.message.chat.id, text=hotel.get_hotel(), disable_web_page_preview=True)
             data += hotel.get_hotel() + '\n'
             if count_photos > 0:
-                bot.send_media_group(chat_id=call.message.chat.id,
-                                     media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+                try:
+                    bot.send_media_group(chat_id=call.message.chat.id,
+                                         media=[InputMediaPhoto(media=path) for path in hotel.photo_path_list])
+                except (Exception):
+                    for path in hotel.photo_path_list:
+                        try:
+                            print(path)
+                            bot.send_photo(chat_id=call.message.chat.id, photo=path)
+                        except Exception:
+                            continue
         if get_maxorder_db(call.message.chat.id) != None:
             order_id = get_maxorder_db(call.message.chat.id) + 1
         adding_orders_db(id_order=order_id,

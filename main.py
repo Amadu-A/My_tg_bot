@@ -158,7 +158,7 @@ def keyboard_city(message: types.Message, query_param: dict) -> None:
     city = message.text.lower()
     data = get_city_list(city, query_param)
     if isinstance(data, str):
-        msg = bot.send_message(message.chat.id, text=data)                        # TODO
+        msg = bot.send_message(message.chat.id, text=data)
         bot.register_next_step_handler(message=msg, callback=keyboard_city, query_param=query_param)
     else:
         kb_cities = types.InlineKeyboardMarkup(row_width=1)
@@ -206,7 +206,6 @@ def get_city_count(message: types.Message) -> None:
     markup = types.InlineKeyboardMarkup(row_width=3)
     item1 = types.InlineKeyboardButton('5', callback_data='6')
     item2 = types.InlineKeyboardButton('10', callback_data='11')
-    #item3 = types.InlineKeyboardButton('25', callback_data='26')
     markup.add(item1, item2)
     text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_11')
     bot.send_message(message.chat.id, text, reply_markup=markup)
@@ -334,7 +333,9 @@ def callback_inline(call: types.CallbackQuery) -> None:
     elif get_user_table_db(call.message.chat.id)[-3] == '/bestdeal':
         hotels_lst = get_best_hotels(query_param, count_photos=count_photos)
     if isinstance(hotels_lst, str):
-        bot.send_message(call.message.chat.id, text=hotels_lst)                                    # TODO
+        text = get_translated_item_db(call.message.chat.id, language=get_user_table_db(call.message.chat.id)[-1][:2],
+                                      param='bot_23')
+        bot.send_message(call.message.chat.id, text=text)
     elif not len(hotels_lst):
         text = get_translated_item_db(call.message.chat.id, language=get_user_table_db(call.message.chat.id)[-1][:2],
                                       param='bot_22')

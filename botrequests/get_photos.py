@@ -23,17 +23,15 @@ def get_photos(hotel_id: int, count_photo: int)-> Union[list, str]:
                                                    params={'id': str(hotel_id)},
                                                    timeout=10).text)
             if 'You have exceeded' in str(response.get('message')) or 'Upgrade your plan at' in str(response.get('message')):
-                raise BaseException
+                raise Exception
             if len(response.get('hotelImages')) > count_photo:
                 response = (response.get('hotelImages'))[:count_photo]
             else:
                 response = response.get('hotelImages')
-            photo_path_list = [item.get('baseUrl').format(size='z') for item in response]
+            photo_path_list = [item.get('baseUrl').format(size='b') for item in response]
             return photo_path_list
         except Timeout:
-            return 'Время ожидания истекло'  # TODO
-        except BaseException('You have exceeded the MONTHLY quota for Requests on your current plan, BASIC. '
+            return 'Время ожидания истекло'
+        except Exception('You have exceeded the MONTHLY quota for Requests on your current plan, BASIC. '
                              'Upgrade your plan at https://rapidapi.com/apidojo/api/hotels4'):
-            #rotate_RAPIDAPI_KEY()
-            #get_photos(hotel_id, count_photo)
             print('Поменять ключи')

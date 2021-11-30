@@ -66,5 +66,4 @@ def get_best_hotels(query_param: dict, count_photos=0) -> Union[list, str]:
                                      ))
         return list_hotels
     except Timeout:
-        return 'Время ожидания истекло'                 # TODO
-
+        return 'Время ожидания истекло'

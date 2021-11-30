@@ -77,5 +77,5 @@ def get_hotels(query_param: dict, count_photos: int = 0) -> Union[list, str]:
                                      ))
         return list_hotels
     except Timeout:
-        return 'Время ожидания истекло'                 # TODO
+        return 'Время ожидания истекло'
 

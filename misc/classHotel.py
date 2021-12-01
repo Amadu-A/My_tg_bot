@@ -1,7 +1,11 @@
-from botrequests.settings import translate_google
+from db.sqdb import get_translated_item_db, get_user_table_db
 
 
 class Hotel:
+    """
+    Класс для хранения параметров по каждому отелю
+    """
+
     def __init__(self, hotel_id=None,
                  name=None,
                  country=None,
@@ -29,14 +33,17 @@ class Hotel:
         self.cite_for_db = cite_for_db
         self.user_id = user_id
 
-    def get_hotel(self):
-        text1 = translate_google('Рейтинг', self.user_id)
-        text2 = translate_google('Цена за сутки за 1 человека', self.user_id)
-        text3 = translate_google('Индекс', self.user_id)
-        text4 = translate_google('Адрес', self.user_id)
-        text5 = translate_google('от центра города', self.user_id)
-        text6 = translate_google('Сайт', self.user_id)
-
+    def get_hotel(self) -> str:
+        """
+        Метод для формирования сообщения, которое будет отправляться пользователю бота с результатами запроса
+        :return: str
+        """
+        text1 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_1')
+        text2 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_2')
+        text3 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_3')
+        text4 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_4')
+        text5 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_5')
+        text6 = get_translated_item_db(self.user_id, language=get_user_table_db(self.user_id)[-1][:2], param='msg_6')
 
         message = f'{self.name}\n\n' \
                   f'{text1} {"☆" * int(self.star_rating)}\n' \
@@ -46,7 +53,3 @@ class Hotel:
                   f'{self.distance} {text5}\n' \
                   f'{text6} {self.cite}\n'
         return message
-# f'Рейтинг "☆" * {int(self.star_rating)}\n' \
-
-
-

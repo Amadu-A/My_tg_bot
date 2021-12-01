@@ -1,19 +1,12 @@
-import requests
-import json
-
 from googletrans import Translator
-
-from config import url_locale, headers
-from db.sqdb import get_user_table_db
 
 
 def get_list_locale() -> dict:
-
-    # res = requests.request("GET", url_locale, headers=headers).json()
-    # langu_dict = {}
-    # for elem in res:
-    #     langu_dict[elem['name']] = elem['hcomLocale']
-    # langu_dict = {k: v for k, v in sorted(langu_dict.items(), key=lambda item: item[0])}
+    """
+    Функция содержит распарсенный и отсортированный по алфавиту словарь локалей языка с сайта API Hotels
+    При необходимости код моджно раскомментировать и обновить словарь.
+    :return:
+    """
 
     langu_dict = {
                 "ARGENTINA": "es_AR",
@@ -117,18 +110,23 @@ def choose_currency() -> list:
      'TND', 'TRY', 'TWD', 'UAH', 'UYU', 'VND']
     return cur_lst
 
-def translate_google(text: str, id: int, dest_google: str='en') -> str:
-    if get_user_table_db(id)[-1] is not None:
-        dest_google = get_user_table_db(id)[-1][:2]
-    print(dest_google)
-    if dest_google == 'ru':
+def translate_google(text: str, dest_google: str='en') -> str:
+    try:
+        if dest_google == 'ru':
+            return text
+        elif dest_google == 'zh':
+            dest_google = 'zh-cn'
+        translator = Translator()
+        newtext = translator.translate(text, dest=dest_google, src='ru')
+        return newtext.text
+    except Exception:
         return text
-    translator = Translator()
-    newtext = translator.translate(text, dest=dest_google, src='ru')
-    return newtext.text
 
 def translate_google_converter(text: str) -> str:
     translator = Translator()
     newtext = translator.translate(text, dest='en')
     return newtext.text
+
+
+
 

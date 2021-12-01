@@ -114,3 +114,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 **/.idea/
+
+# db
+*.db
+db/users.db
+.db
+
+#debug
+debug.json

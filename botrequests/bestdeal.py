@@ -39,8 +39,7 @@ def get_best_hotels(query_param: dict, count_photos=0) -> Union[list, str]:
                                                headers=headers,
                                                params=querystring_detail,
                                                timeout=10).text)
-        if 'You have exceeded' in str(response.get('message')) or 'Upgrade your plan at' in str(response.get('message')):
-            raise BaseException
+
         result = response.get('data').get('body').get('searchResults').get('results')
         list_hotels = []
         for hotel in result:

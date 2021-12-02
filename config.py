@@ -1,9 +1,6 @@
 from environs import Env
 import datetime
-#import itertools
 
-
-#def rotate_RAPIDAPI_KEY():
 
 
 env = Env()

@@ -103,6 +103,7 @@ def callback_inline(call: types.CallbackQuery) -> None:
 @bot.message_handler(commands=['history'])
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/history'"""
+    adding_user_id_db(message.chat.id)
     set_locale_new_user(message.chat.id)
     data_order = get_data_order_db(message.chat.id)
     if data_order[-1][-1] == 'История пуста':
@@ -127,6 +128,7 @@ def history(message: types.Message) -> None:
 @bot.message_handler(commands=['clear_history'])
 def history(message: types.Message) -> None:
     """Функция, обрабатывающая команду '/clear_history'"""
+    adding_user_id_db(message.chat.id)
     set_locale_new_user(message.chat.id)
     clear_history(int(message.chat.id))
     text = get_translated_item_db(message.chat.id, language=get_user_table_db(message.chat.id)[-1][:2], param='bot_21')
@@ -138,7 +140,7 @@ def history(message: types.Message) -> None:
 @bot.message_handler(content_types=['text'])
 def get_textmessages(message: types.Message) -> None:
     """Функция, помогающая выбрать нужную команду, реагирует на любой текст, не являющийся командой"""
-    processing_user_db(message.chat.id)
+    adding_user_id_db(message.chat.id)
     set_locale_new_user(message.chat.id)
     text = []
     for count in range(1, 8):
@@ -351,7 +353,6 @@ def callback_inline(call: types.CallbackQuery) -> None:
                 except (Exception):
                     for path in hotel.photo_path_list:
                         try:
-                            print(path)
                             bot.send_photo(chat_id=call.message.chat.id, photo=path)
                         except Exception:
                             continue

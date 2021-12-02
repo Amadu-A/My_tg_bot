@@ -48,7 +48,7 @@ def main_commands(message_chat_id, message_text):
     elif message_text == '/highprice':
         query_param['sorting'] = 'PRICE_HIGHEST_FIRST'
     elif message_text == '/bestdeal':
-        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'  # 'DISTANCE_FROM_LANDMARK'                       # TODO
+        query_param['sorting'] = 'DISTANCE_FROM_LANDMARK'
     adding_values_db(message_chat_id, query_param['sorting'], param='sorting')
     return query_param
 

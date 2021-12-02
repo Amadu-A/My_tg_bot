@@ -24,7 +24,7 @@ def get_city_list(city_name: str, query_param: dict) -> Union[dict, str]:
         response = requests.request('GET', url_id_city, headers=headers, params=querystring_search, timeout=10)
         return response.json()['suggestions'][0]['entities']
     except Timeout:
-        return 'Время ожидания ответа истекло'                 # TODO
+        return 'Время ожидания ответа истекло'
 
 @logger.catch
 @logging_decorator_responce

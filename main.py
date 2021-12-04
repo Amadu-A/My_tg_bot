@@ -9,8 +9,9 @@ from config import BOT_TOKEN, ADMIN_ID
 from botrequests.high_lowprice import get_city_list, get_hotels
 from botrequests.settings import get_list_locale, choose_currency
 from botrequests.bestdeal import get_best_hotels
-from db.sqdb import *
-from misc.logging_module import *
+from db.sqdb import processing_user_db, clear_history, adding_user_id_db, adding_values_db, get_user_table_db, \
+    get_maxorder_db, get_data_order_db, adding_orders_db, adding_language_into_languages_db, get_translated_item_db
+from misc.logging_module import logger, logging_decorator
 from misc.func_for_main import processing_admin, set_locale_new_user, main_commands, processing_size_price, \
     inline_photo_cnt, inline_settings
 
@@ -118,9 +119,10 @@ def history(message: types.Message) -> None:
                                                    param='bot_2') \
                    + response[-3] + '\n' + get_translated_item_db(message.chat.id,
                                                                   language=get_user_table_db(message.chat.id)[-1][:2],
-                                                                  param='bot_3') \
-                   + response[-2] + '\n' + response[-1]
+                                                                  param='bot_3') + response[-2]
+                   #+ response[-2] + '\n' + response[-1]
             bot.send_message(chat_id=message.chat.id, text=text)
+            bot.send_message(chat_id=message.chat.id, text=response[-1])
 
 
 @logger.catch

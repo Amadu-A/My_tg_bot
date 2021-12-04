@@ -1,7 +1,8 @@
 import sqlite3
 from typing import Union
 from botrequests.settings import translate_google
-from misc.logging_module import *
+from misc.logging_module import logger, logging_decorator_responce, logging_decorator
+from config import API_KEY_lst
 
 
 @logger.catch
@@ -32,6 +33,22 @@ def processing_user_db(people_id: int) -> None:
         currency TEXT,
         locale TEXT);
     """)
+    connect.commit()
+
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS keys(
+            key_id INTEGER,
+            key_value TEXT,
+            flag TEXT);
+        """)
+    cursor.execute(f"SELECT key_value FROM keys")
+    data = cursor.fetchone()
+    if data is None:
+        for i in range(len(API_KEY_lst)):
+            cursor.execute("""INSERT INTO keys(key_id, key_value, flag)
+                            VALUES(?, ?, ?);""",
+                           (i + 1, API_KEY_lst[i], 'False'))
     connect.commit()
 
     cursor.execute("""CREATE TABLE IF NOT EXISTS orders(
@@ -258,3 +275,37 @@ def get_rus_text(param: str) -> str:
     cursor = connect.cursor()
     cursor.execute(f"SELECT \"{param}\" FROM languages WHERE language = 'ru'")
     return cursor.fetchone()
+
+
+@logger.catch
+@logging_decorator_responce
+def get_keys_table_db() -> list:
+    """Функция возвращает ключ, где указан флаг True """
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT * FROM keys WHERE flag = 'True'")
+    one_result = cursor.fetchone()
+    return one_result
+
+
+@logger.catch
+@logging_decorator
+def set_keys_true_db(id: int = 1) -> None:
+    """Функция устанавливает параметр True для ключа"""
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT flag FROM keys WHERE key_id = {id}")
+    cursor.execute(f"UPDATE keys SET flag = 'True' WHERE key_id = {id}")
+    connect.commit()
+
+
+@logger.catch
+@logging_decorator
+def set_keys_false_db() -> None:
+    """Функция устанавливает параметр False для всех ключей"""
+    connect = sqlite3.connect('db\\users.db')
+    cursor = connect.cursor()
+    cursor.execute(f"SELECT flag FROM keys")
+    cursor.execute(f"UPDATE keys SET flag = 'False'")
+    connect.commit()
+

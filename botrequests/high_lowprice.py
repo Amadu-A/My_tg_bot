@@ -3,10 +3,12 @@ import json
 from requests.exceptions import Timeout
 from typing import Union
 
-from config import headers, url_id_city, url_detail #rotate_RAPIDAPI_KEY
+from config import url_id_city, url_detail, API_KEY_lst
 from botrequests.get_photos import get_photos
-from misc.classHotel import *
-from misc.logging_module import *
+from misc.classHotel import Hotel
+from misc.logging_module import logger, logging_decorator_responce
+from misc.func_for_main import new_number
+from db.sqdb import get_keys_table_db, set_keys_true_db, set_keys_false_db
 
 
 @logger.catch
@@ -18,6 +20,10 @@ def get_city_list(city_name: str, query_param: dict) -> Union[dict, str]:
     :param query_param: dict
     :return: dict
     """
+    headers = {
+        'x-rapidapi-host': 'hotels4.p.rapidapi.com',
+        'x-rapidapi-key': get_keys_table_db()[1]
+    }
     try:
         querystring_search = {'query': city_name.title(), 'locale': query_param['locale'],
                               'currency': query_param['currency']}
@@ -35,6 +41,10 @@ def get_hotels(query_param: dict, count_photos: int = 0) -> Union[list, str]:
     :param count_photos: int
     :return: list
     """
+    headers = {
+        'x-rapidapi-host': 'hotels4.p.rapidapi.com',
+        'x-rapidapi-key': get_keys_table_db()[1]
+    }
     city_id = query_param['destinationId']
     querystring_detail = {
         'adults1': '1',
@@ -51,7 +61,7 @@ def get_hotels(query_param: dict, count_photos: int = 0) -> Union[list, str]:
         response = requests.request('GET', url_detail, headers=headers, params=querystring_detail, timeout=10)
         response = json.loads(response.text)
         if 'You have exceeded' in str(response.get('message')) or 'Upgrade your plan at' in str(response.get('message')):
-            raise Exception
+            raise Exception('Обновляю ключ')
         result = response.get('data').get('body').get('searchResults').get('results')
         list_hotels = []
         for hotel in result:
@@ -64,7 +74,7 @@ def get_hotels(query_param: dict, count_photos: int = 0) -> Union[list, str]:
                                      star_rating=hotel.get('starRating'),
                                      distance=hotel.get("landmarks")[0].get('distance'),
                                      price=hotel.get('ratePlan').get('price').get('current'),
-                                     photo_path_list=get_photos(hotel.get('id'), count_photos),
+                                     photo_path_list=get_photos(hotel.get('id'), count_photos, headers),
                                      cite=f'https://hotels.com/ho{hotel.get("id")}/?q-check-in='
                                           f'{query_param["check_in"]}&q-check-out='
                                           f'{query_param["check_out"]}&q-rooms=1&q-room-0-adults=1&q-room-0-children=0',
@@ -78,4 +88,10 @@ def get_hotels(query_param: dict, count_photos: int = 0) -> Union[list, str]:
         return list_hotels
     except Timeout:
         return 'Время ожидания истекло'
+    except Exception:
+        true_id = get_keys_table_db()[0]
+        set_keys_false_db()
+        set_keys_true_db(new_number(true_id, len(API_KEY_lst)))
+        headers['x-rapidapi-key'] = get_keys_table_db()[1]
+        return 'Идет смена ключей, попробуйте снова'
 

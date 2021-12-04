@@ -1,11 +1,14 @@
 from telebot import types
 import re
+import itertools
 from db.sqdb import *
 
 
 def processing_admin(ADMIN_ID):
     """Отправление сообщения админу для функции send_to_admin"""
     processing_user_db(int(ADMIN_ID[0]))
+    set_keys_false_db()
+    set_keys_true_db()
     adding_language_into_languages_db(param='en')
     if str(get_user_table_db(ADMIN_ID[0])[-1]).isdigit() or get_user_table_db(ADMIN_ID[0])[-1] is None:
         value = 'en_US'
@@ -96,3 +99,12 @@ def inline_photo_cnt():
     item3 = types.InlineKeyboardButton('5', callback_data=5)
     markup.add(item1, item2, item3)
     return markup
+
+
+def new_number(id: int, count) -> int:
+    id += 1
+    if id > count:
+        id = 1
+    return id
+
+

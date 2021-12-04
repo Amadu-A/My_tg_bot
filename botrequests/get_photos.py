@@ -3,10 +3,10 @@ import json
 from requests.exceptions import Timeout
 from typing import Union
 
-from config import headers, url_photos # rotate_RAPIDAPI_KEY
+from config import url_photos
 
 
-def get_photos(hotel_id: int, count_photo: int)-> Union[list, str]:
+def get_photos(hotel_id: int, count_photo: int, headers: dict)-> Union[list, str]:
     """
     Функция парсит фотографии с сайта api Hotels и возвращает список с результатом
     :param hotel_id: int
@@ -35,3 +35,4 @@ def get_photos(hotel_id: int, count_photo: int)-> Union[list, str]:
         except Exception('You have exceeded the MONTHLY quota for Requests on your current plan, BASIC. '
                              'Upgrade your plan at https://rapidapi.com/apidojo/api/hotels4'):
             print('Поменять ключи')
+            return []

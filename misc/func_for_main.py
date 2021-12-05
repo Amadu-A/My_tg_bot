@@ -1,6 +1,5 @@
 from telebot import types
 import re
-import itertools
 from db.sqdb import *
 
 

@@ -4,6 +4,7 @@ from telebot.types import InputMediaPhoto
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 import datetime as dt
 import re
+import time
 
 from config import BOT_TOKEN, ADMIN_ID
 from botrequests.high_lowprice import get_city_list, get_hotels
@@ -417,4 +418,9 @@ def cal(c: types.CallbackQuery) -> None:
 
 if __name__ == '__main__':
     send_to_admin(ADMIN_ID)
-    bot.polling(none_stop=True, interval=0)
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0)
+        except Exception as e:
+            logger.error(e)
+            time.sleep(10)
